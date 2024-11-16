@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Drive 폴더 내용</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Google Drive 폴더 내용</h1>
+    <div id="folderContent"></div>
+
+    <script>
+        async function fetchFolderContent() {
+            const url = 'https://drive.google.com/embeddedfolderview?id=14qVfJWQj7vgEiytrHT6SEJjUxckaPC73#list';
+            const response = await fetch(url);
+            const html = await response.text();
+            
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const items = doc.querySelectorAll('.flip-entry');
+            let tableHTML = '<table><tr><th>파일명</th><th>크기</th><th>수정일</th></tr>';
+            
+            items.forEach(item => {
+                const name = item.querySelector('.flip-entry-title').textContent.trim();
+                const size = item.querySelector('.flip-entry-size').textContent.trim();
+                const date = item.querySelector('.flip-entry-last-modified').textContent.trim();
+                tableHTML += `<tr><td>${name}</td><td>${size}</td><td>${date}</td></tr>`;
+            });
+            
+            tableHTML += '</table>';
+            document.getElementById('folderContent').innerHTML = tableHTML;
+        }
+
+        fetchFolderContent();
+    </script>
+</body>
+</html>
