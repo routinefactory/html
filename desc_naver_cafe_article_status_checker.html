@@ -113,7 +113,7 @@
         <h2 id="features">주요 기능</h2>
         <ul>
             <li>네이버 카페 게시글 URL 일괄 입력 기능</li>
-            <li>실시간 게시글 상태 확인</li>
+            <li>실���간 게시글 상태 확인</li>
             <li>삭제 여부 자동 체크</li>
             <li>결과 데이터 자동 저장</li>
             <li>엑셀 형식 보고서 생성</li>
@@ -153,48 +153,49 @@
             </tr>
             <tr>
                 <td>조회 건수</td>
-                <td>일 50건 제한</td>
+                <td>최대 15개</td>
                 <td>무제한</td>
             </tr>
             <tr>
-                <td>데이터 저장</td>
-                <td>1회성 저장</td>
-                <td>영구 보관</td>
+                <td>조회 속도</td>
+                <td>게시글 당 2초</td>
+                <td>게시글 당 2초</td>
             </tr>
             <tr>
-                <td>보고서 생성</td>
-                <td>기본 양식만</td>
-                <td>커스텀 양식 지원</td>
+                <td>데이터 저장</td>
+                <td>구글 스프레드시트</td>
+                <td>구글 스프레드시트</td>
             </tr>
         </table>
         
         <h2 id="pro">PRO 사용자</h2>
         <ul id="pro-desc">
             <li>무제한 게시글 조회 가능</li>
-            <li>실시간 모니터링 알림 기능</li>
-            <li>데이터 영구 보관 및 백업</li>
-            <li>맞춤형 보고서 템플릿 제공</li>
+            <li>구글 스프레드시트 자동 저장 기능</li>
+            <li>실시간 삭제 여부 모니터링</li>
+            <li>대량 URL 일괄 처리 지원</li>
             <li>API 연동 지원</li>
         </ul>
         
         <h2 id="free">FREE 사용자</h2>
         <ul id="free-desc">
-            <li>일일 50건 조회 제한</li>
-            <li>기본 보고서 형식만 제공</li>
-            <li>7일간 데이터 보관</li>
+            <li>최대 15개 게시글 조회 제한</li>
+            <li>구글 스프레드시트 자동 저장 기능</li>
+            <li>실시간 삭제 여부 모니터링</li>
+            <li>기본적인 URL 처리 기능</li>
         </ul>
 
         <h2 id="manual">사용 설명서</h2>
         <p>프로그램의 자세한 사용 방법은 위쪽의 [사용 설명서 보러가기] 버튼을 클릭하여 확인하실 수 있습니다.</p>
-        <input type="hidden" id="manual-link" value="https://docs.google.com/document/d/1CUdGGn7KLet2b9O4L2HKYFA2OVDrX91NVZifQw_3NdM/edit?tab=t.0">
+        <input type="hidden" id="manual-link" value="https://docs.google.com/document/d/1ouqLxPs3yCF6U4EDqN1RWDa_xxDvH7bWTkczp9uD660/edit?tab=t.0">
 
         <h2 id="how-it-works">작동 방식</h2>
         <ul>
-            <li>확인하고 싶은 네이버 카페 게시글 URL 입력</li>
-            <li>프로그램이 자동으로 게시글 상태 확인</li>
-            <li>삭제 여부 실시간 체크</li>
-            <li>결과 자동 저장 및 기록</li>
-            <li>엑셀 형식의 보고서 자동 생성</li>
+            <li>구글 스프레드시트에 조회할 네이버 카페 게시글 URL 입력</li>
+            <li>프로그램이 자동으로 각 게시글의 상태를 확인</li>
+            <li>삭제 여부를 실시간으로 체크하여 스프레드시트에 기록</li>
+            <li>FREE 사용자는 최대 15개, PRO 사용자는 무제한 조회 가능</li>
+            <li>IP 제한 회피를 위해 게시글 당 2초의 대기 시간 적용</li>
         </ul>
         
         <h2 id="conclusion">추신</h2>
