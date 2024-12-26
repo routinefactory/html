@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네이버 카페 댓글 및 대댓글 프로그램</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 45px;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+            margin-top: 60px; /* 소제목 간 간격 증가 */
+        }
+        .table-of-contents {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .table-of-contents h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .table-of-contents ul {
+            margin-bottom: 0;
+        }
+        .table-of-contents a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .table-of-contents a:hover {
+            text-decoration: underline;
+        }
+
+        ul, ol {
+            padding-left: 2px;
+            
+        }
+        li {
+            margin-bottom: 10px;
+            padding-left: 0px;
+            position: relative;
+        }
+        li:before {
+            /* content: "•"; */
+            color: #3498db;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>네이버 카페 댓글 및 대댓글 프로그램</h1>
+        
+        <div class="table-of-contents">
+            <h3>목차</h3>
+            <ul>
+                <li><a href="#intro">프로그램 소개</a></li>
+                <li><a href="#features">주요 기능</a></li>
+                <li><a href="#details">프로그램 기능 상세</a></li>
+                <li><a href="#how-it-works">작동 방식</a></li>
+                <li><a href="#manual">사용 설명서</a></li>
+                <li><a href="#conclusion">추신</a></li>
+            </ul>
+        </div>
+
+        <h2 id="intro">프로그램 소개</h2>
+        <p>이 프로그램은 네이버 카페의 게시물에 대량의 댓글과 대댓글을 자동으로 작성해주는 솔루션입니다. 구글 스프레드시트와 연동하여 수백, 수천 개의 댓글/대댓글 조합도 효율적으로 관리할 수 있습니다.</p>
+
+        <h2 id="features">주요 기능</h2>
+        <ul>
+            <li>대량 댓글 자동화
+                <ul>
+                    <li>20개 단위로 메인 댓글 일괄 작성</li>
+                    <li>각 메인 댓글에 대한 대댓글 자동 작성</li>
+                    <li>작업 진행 상태 실시간 확인</li>
+                </ul>
+            </li>
+            <li>구글 스프레드시트 연동
+                <ul>
+                    <li>댓글/대댓글 내용 일괄 관리</li>
+                    <li>작업 진행 상태 자동 업데이트</li>
+                    <li>계정 정보 통합 관리</li>
+                </ul>
+            </li>
+            <li>안정성 확보
+                <ul>
+                    <li>작업 간 딜레이 자동 조절</li>
+                    <li>네이버 정책 준수</li>
+                    <li>오류 발생 시 자동 재시도</li>
+                </ul>
+            </li>
+            <li>다중 계정 지원
+                <ul>
+                    <li>메인 댓글용 계정 관리</li>
+                    <li>대댓글용 계정 관리</li>
+                    <li>계정별 작업 상태 추적</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2 id="details">프로그램 기능 상세</h2>
+        <table>
+            <tr>
+                <th>구분</th>
+                <th>FREE 사용자</th>
+                <th>PRO 사용자</th>
+            </tr>
+            <tr>
+                <td>프로그램 사용</td>
+                <td>사용 불가</td>
+                <td>무제한 사용</td>
+            </tr>
+            <tr>
+                <td>작업 수량</td>
+                <td>사용 불가</td>
+                <td>무제한</td>
+            </tr>
+            <tr>
+                <td>계정 수</td>
+                <td>사용 불가</td>
+                <td>무제한</td>
+            </tr>
+            <tr>
+                <td>기술 지원</td>
+                <td>사용 불가</td>
+                <td>우선 지원</td>
+            </tr>
+        </table>
+
+        <ul id="free-desc">
+            <li>해당 프로그램 사용 불가</li>
+        </ul>
+
+        <ul id="pro-desc">
+            <li>모제한 댓글/대댓글 작성 기능</li>
+            <li>다중 계정 무제한 지원</li>
+            <li>구글 스프레드시트 연동</li>
+            <li>실시간 작업 현황 모니터링</li>
+            <li>우선 기술 지원</li>
+            <li>신규 기능 우선 적용</li>
+        </ul>
+
+        <h2 id="how-it-works">작동 방식</h2>
+        <ol>
+            <li>작업 준비
+                <ul>
+                    <li>구글 스프레드시트 연동 설정</li>
+                    <li>계정 정보 및 댓글 내용 입력</li>
+                </ul>
+            </li>
+            <li>메인 댓글 작성
+                <ul>
+                    <li>20개 단위로 메인 댓글 일괄 작성</li>
+                    <li>작업 상태 실시간 업데이트</li>
+                </ul>
+            </li>
+            <li>대댓글 작성
+                <ul>
+                    <li>메인 댓글별 대댓글 자동 작성</li>
+                    <li>계정별 작업 현황 추적</li>
+                </ul>
+            </li>
+            <li>작업 관리
+                <ul>
+                    <li>오류 발생 시 자동 재시도</li>
+                    <li>작업 완료 상태 확인</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2 id="manual">사용 설명서</h2>
+        <p>프로그램의 자세한 사용 방법은 별도의 매뉴얼을 참고해 주시기 바랍니다.</p>
+
+        <h2 id="conclusion">추신</h2>
+        <input type="hidden" id="manual-link" value="https://docs.google.com/document/d/1gc7773bYHjNdodPsAcS60Guh28PtS0AXXAKgKjm4tCU/edit?usp=sharing">
+        <p>이 프로그램은 PRO 라이센스 사용자에게만 제공되는 전문 자동화 솔루션입니다. 대량의 댓글과 대댓글을 효율적으로 관리하며, 구글 스프레드시트와의 연동을 통해 작업 현황을 실시간으로 확인할 수 있습니다.</p>
+    </div>
+</body>
+</html>
