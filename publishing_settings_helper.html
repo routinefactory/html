@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>텍스트를 JSON으로 변환</title>
+    <title>publishing_settings.json 파일 편집기</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -55,7 +55,7 @@
         }
         .copy-btn {
             background-color: #2196F3;
-            margin-top: 10px;
+            margin-bottom: 10px;
         }
         .copy-btn:hover {
             background-color: #0b7dda;
@@ -63,12 +63,12 @@
     </style>
 </head>
 <body>
-    <h1>텍스트를 JSON으로 변환</h1>
+    <h1>publishing_settings.json 파일 편집기</h1>
     
     <div class="container">
         <div style="flex: 1;">
             <h3>입력 텍스트</h3>
-            <textarea id="inputText" placeholder="여기에 탭으로 구분된 텍스트를 입력하세요...">가가가	email@gmail.com	password	https://fasdsdsd.tistory.com/	https://fasdsdsd.tistory.com/	https://www.trip.com/t/dfsdfdsf	
+            <textarea id="inputText" placeholder="여기에 탭으로 구분된 텍스트를 입력하세요..." onclick="this.value=''">가가가	email@gmail.com	password	https://fasdsdsd.tistory.com/	https://fasdsdsd.tistory.com/	https://www.trip.com/t/dfsdfdsf	
 나나나	email@gmail.com	password	https://adsadasd.tistory.com/	https://adsadasd.tistory.com/	https://www.trip.com/t/fdsafsadf	
 다다다	email@gmail.com	password	https://fdsfsdfdsf.tistory.com/	https://fdsfsdfdsf.tistory.com/	https://www.trip.com/t/sadfasdfadsf	11.11.11.11:6011:lumi-3123:123123
 라라라라	email@dygovil.com	password	https://adsfsdf.tistory.com/	https://adsfsdf.tistory.com/	https://www.trip.com/t/asdfasdfsadf	11.11.11.11:6011:lumi-3123:123123</textarea>
@@ -78,8 +78,8 @@
     <button id="convertBtn">변환하기</button>
     
     <h3>JSON 결과</h3>
-    <pre id="jsonOutput"></pre>
     <button id="copyBtn" class="copy-btn">JSON 복사하기</button>
+    <pre id="jsonOutput"></pre>
     
     <script>
         document.getElementById('convertBtn').addEventListener('click', function() {
