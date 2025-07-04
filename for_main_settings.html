@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>티스토리 제휴 JSON 생성기</title>
+  <title>제휴 JSON 생성기</title>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -63,7 +63,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>티스토리 제휴 JSON 생성기</h1>
+    <h1>제휴 JSON 생성기</h1>
 
     <label>1차 설정 정보 (JSON 형식)</label>
     <div class="example">
@@ -73,11 +73,11 @@
         "ai_model_selection": "gemini-2.5-flash",<br>
         "affiliate_platform_selection": "트립닷컴",<br>
         "affiliate_nickname_selection": "routinefactory@gmail.com",<br>
-        "affiliate_tracking_selection": "https://writerstruct9827.tistory.com (행48)",<br>
+        "affiliate_tracking_selection": "https://test.tistory.com (행48)",<br>
         "platform_selection": "티스토리",<br>
-        "channel_selection": "오늘의 루틴",<br>
-        "post_structure": "★ 트닷(공통) - (MZ스타일) (제목 파이프) 1번스킨 강조텍스트 초록, 인트로 짧게, 할인코드 없음",<br>
-        "thumbnail_design": "★ 테두리없음, 색상랜덤, 폰트고정, 그라데이션검정으로고정.json",<br>
+        "channel_selection": "루틴",<br>
+        "post_structure": "1번스킨 강조텍스트 초록",<br>
+        "thumbnail_design": "고정.json",<br>
         "data_limit": 1,<br>
         "publish_type": "공개",<br>
         "schedule_info": null<br>
@@ -86,7 +86,7 @@
     <textarea id="baseJson" placeholder="1차 JSON 설정을 여기에 붙여넣기"></textarea>
 
     <label>2차 채널 정보 (이름 | 주소 (행번호))</label>
-    <textarea id="channelData" placeholder="예시: 오늘의 루틴 | https://xxx.tistory.com (행48)"></textarea>
+    <textarea id="channelData" placeholder="예시: 루틴 | https://xxx.tistory.com (행48)"></textarea>
 
     <button onclick="generateJson()">변환</button>
 
