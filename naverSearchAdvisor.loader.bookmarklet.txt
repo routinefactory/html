@@ -1,0 +1,1 @@
+javascript:(async()=>{const u='https://raw.githubusercontent.com/routinefactory/html/main/naverSearchAdvisorStatic.react.runtime.js?v=20260311-1';const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('runtime fetch failed: '+r.status);const t=await r.text();(0,eval)(t)})().catch(e=>alert('SearchAdvisor loader error\n'+(e&&e.message?e.message:e)));
