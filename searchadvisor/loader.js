@@ -16,6 +16,8 @@
       if (!manifest || !manifest.runtime) {
         throw new Error("invalid manifest");
       }
+      window.__SEARCHADVISOR_RUNTIME_VERSION__ = manifest.version || "unknown";
+      window.__SEARCHADVISOR_RUNTIME_LOADED_AT__ = Date.now();
       var version = manifest.version ? "?v=" + encodeURIComponent(manifest.version) : "";
       return fetch(base + "/" + manifest.runtime + version, { cache: "no-store" });
     })
