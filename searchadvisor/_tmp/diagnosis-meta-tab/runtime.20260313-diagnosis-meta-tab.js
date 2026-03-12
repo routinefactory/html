@@ -998,6 +998,23 @@ function barchart(vals, labels, H, col, unit) {\r
   \${clone.outerHTML}\r
   <script>\r
     const EXPORT_PAYLOAD = \${JSON.stringify(payload)};\r
+    window.__SEARCHADVISOR_EXPORT_PAYLOAD__ = EXPORT_PAYLOAD;\r
+    const SITE_META_MAP = EXPORT_PAYLOAD.siteMeta || {};\r
+    const MERGED_META = EXPORT_PAYLOAD.mergedMeta || null;\r
+    function getSiteShortName(a) {\r
+      const s = a ? SITE_META_MAP[a] || null : null;\r
+      const f = s ? (s.displayLabel || s.label || s.shortName || "").trim() : "";\r
+      return f || (a ? a.replace(/^https?:\\/\\//, "") : "사이트 선택");\r
+    }\r
+    function getSiteLabel(a) {\r
+      if (!a) return "사이트 선택";\r
+      const s = SITE_META_MAP[a] || null;\r
+      const f = s ? (s.displayLabel || s.label || s.shortName || "").trim() : "";\r
+      return f || getSiteShortName(a);\r
+    }\r
+    function isMergedReport() {\r
+      return !!MERGED_META;\r
+    }\r
     const C = \${JSON.stringify(C)};\r
     const COLORS = \${JSON.stringify(COLORS)};\r
     const DOW = \${JSON.stringify(DOW)};\r
@@ -1553,6 +1570,44 @@ function barchart(vals, labels, H, col, unit) {\r
     tabsEl = document.getElementById("sadv-tabs"),\r
     bdEl = document.getElementById("sadv-bd"),\r
     labelEl = document.getElementById("sadv-site-label");\r
+  let snapshotMetaState = { siteMeta: {}, mergedMeta: null };\r
+  function setSnapshotMetaState(state) {\r
+    snapshotMetaState = {\r
+      siteMeta: state && state.siteMeta ? state.siteMeta : {},\r
+      mergedMeta: state && state.mergedMeta ? state.mergedMeta : null,\r
+    };\r
+  }\r
+  function getSiteMetaMap() {\r
+    const liveMap = snapshotMetaState.siteMeta;\r
+    if (liveMap && Object.keys(liveMap).length) return liveMap;\r
+    const payload =\r
+      typeof window !== "undefined" && window.__SEARCHADVISOR_EXPORT_PAYLOAD__\r
+        ? window.__SEARCHADVISOR_EXPORT_PAYLOAD__\r
+        : null;\r
+    return payload && payload.siteMeta ? payload.siteMeta : {};\r
+  }\r
+  function getMergedMetaState() {\r
+    if (snapshotMetaState.mergedMeta) return snapshotMetaState.mergedMeta;\r
+    const payload =\r
+      typeof window !== "undefined" && window.__SEARCHADVISOR_EXPORT_PAYLOAD__\r
+        ? window.__SEARCHADVISOR_EXPORT_PAYLOAD__\r
+        : null;\r
+    return payload && payload.mergedMeta ? payload.mergedMeta : null;\r
+  }\r
+  function getSiteShortName(a) {\r
+    const meta = a ? getSiteMetaMap()[a] || null : null;\r
+    const label = meta ? (meta.displayLabel || meta.label || meta.shortName || "").trim() : "";\r
+    return label || (a ? a.replace(/^https?:\\/\\//, "") : "사이트 선택");\r
+  }\r
+  function getSiteLabel(a) {\r
+    if (!a) return "사이트 선택";\r
+    const meta = getSiteMetaMap()[a] || null;\r
+    const label = meta ? (meta.displayLabel || meta.label || meta.shortName || "").trim() : "";\r
+    return label || getSiteShortName(a);\r
+  }\r
+  function isMergedReport() {\r
+    return !!getMergedMetaState();\r
+  }\r
   function ensureCurrentSite() {\r
     if (!allSites.length) {\r
       curSite = null;\r
@@ -1562,7 +1617,11 @@ function barchart(vals, labels, H, col, unit) {\r
     return curSite;\r
   }\r
   function setAllSitesLabel() {\r
-    labelEl.innerHTML = \`<span>\${allSites.length}개 사이트 등록됨</span>\`;\r
+    const mergedMeta = getMergedMetaState();\r
+    const summary = isMergedReport() && mergedMeta && mergedMeta.sourceCount\r
+      ? \`<span>\${allSites.length}개 사이트 등록됨 · \${mergedMeta.sourceCount}개 스냅샷 병합</span>\`\r
+      : \`<span>\${allSites.length}개 사이트 등록됨</span>\`;\r
+    labelEl.innerHTML = summary;\r
   }\r
   function buildCombo(rows) {\r
     const drop = document.getElementById("sadv-combo-drop");\r
@@ -1583,7 +1642,7 @@ function barchart(vals, labels, H, col, unit) {\r
       "개 · 클릭많은순</div>";\r
     orderedSites.forEach(function (s) {\r
       const col = SITE_COLORS_MAP[s] || C.muted,\r
-        shortName = s.replace(/^https?:\\/\\//, ""),\r
+        shortName = getSiteLabel(s),\r
         row = rowsMap[s],\r
         clickStr = row ? fmt(row.totalC) + "클릭" : "—",\r
         clickCol = row ? C.green : C.muted;\r
@@ -1602,7 +1661,7 @@ function barchart(vals, labels, H, col, unit) {\r
     if (!site || !allSites.includes(site)) return;\r
     curSite = site;\r
     const col = SITE_COLORS_MAP[site] || C.muted,\r
-      shortName = site.replace(/^https?:\\/\\//, "");\r
+      shortName = getSiteLabel(site);\r
     document.getElementById("sadv-combo-dot").style.background = col;\r
     document.getElementById("sadv-combo-label").textContent = shortName;\r
     document.querySelectorAll(".sadv-combo-item").forEach((el) => {\r
@@ -3798,7 +3857,7 @@ Error generating stack: `+C.message+`
       const activeSite = legacyDotLabel ? legacyDotLabel.textContent : '';
       qa('[data-sadvx-site]', shell).forEach(function (button) {
         const site = button.getAttribute('data-sadvx-site') || '';
-        button.dataset.active = site.replace(/^https?:\\/\\//, '') === activeSite ? 'true' : 'false';
+        button.dataset.active = getSiteLabel(site) === activeSite || getSiteShortName(site) === activeSite ? 'true' : 'false';
       });
     } finally {
       syncing = false;
@@ -3852,7 +3911,8 @@ Error generating stack: `+C.message+`
       const query = (searchInput.value || '').toLowerCase();
       qa('[data-sadvx-site]', shell).forEach(function (button) {
         const site = button.getAttribute('data-sadvx-site') || '';
-        button.style.display = !query || site.toLowerCase().includes(query) ? 'flex' : 'none';
+        const searchTarget = (site + ' ' + getSiteLabel(site)).toLowerCase();
+        button.style.display = !query || searchTarget.includes(query) ? 'flex' : 'none';
       });
     });
   }
@@ -3927,7 +3987,7 @@ Error generating stack: `+C.message+`
 }
 [data-sadvx="site-panel"] {
   z-index: 10000002 !important;
-}`,L=fS.renderToStaticMarkup(Y.jsx(wS,{state:{...E,curMode:T.curMode,curSite:T.curSite,curTab:T.curTab,allSites:T.allSites},rows:T.summaryRows}));let U=O;U=U.replace("</head>",`<style id="sadv-react-style">${vS(k)}</style></head>`),U=U.replace('<div id="sadv-bd">',`<div id="sadv-react-shell-root">${L}</div><div id="sadv-bd">`),U=U.replace("</body>",`<script>${gS(SS())}<\/script></body>`);const K=`searchadvisor-${yS(E.accountLabel)}-${bS(S)}.html`,Z=new Blob([U],{type:"text/html;charset=utf-8"}),$=document.createElement("a");$.href=URL.createObjectURL(Z),$.download=K,document.body.appendChild($),$.click(),$.remove(),p({label:"HTML 저장 완료",detail:K,progress:1,tone:"success"}),setTimeout(()=>{URL.revokeObjectURL($.href)},1e3)}catch(S){console.error(S),p({label:"HTML 저장 실패",detail:S instanceof Error?S.message:"알 수 없는 오류",progress:null,tone:"error"}),alert("HTML 저장 중 오류가 발생했어요. 다시 시도해주세요.")}finally{f&&(f.disabled=!1,f.textContent=v)}}let N0=null;const ES=3e4;function L0(){let a=document.getElementById("sadv-activity");return a||(a=document.createElement("div"),a.id="sadv-activity",a.setAttribute("style",["position:fixed","top:16px","left:50%","transform:translateX(-50%)","z-index:10000010","width:min(420px,calc(100vw - 24px))","display:none","pointer-events:none","font-family:Pretendard Variable,SUIT Variable,Apple SD Gothic Neo,Noto Sans KR,sans-serif"].join(";")),a.innerHTML=`
+}`;setSnapshotMetaState(T);const L=fS.renderToStaticMarkup(Y.jsx(wS,{state:{...E,curMode:T.curMode,curSite:T.curSite,curTab:T.curTab,allSites:T.allSites,siteMeta:T.siteMeta||{},mergedMeta:T.mergedMeta||null},rows:T.summaryRows}));let U=O;U=U.replace("</head>",`<style id="sadv-react-style">${vS(k)}</style></head>`),U=U.replace('<div id="sadv-bd">',`<div id="sadv-react-shell-root">${L}</div><div id="sadv-bd">`),U=U.replace("</body>",`<script>${gS(SS())}<\/script></body>`);const K=`searchadvisor-${yS(E.accountLabel)}-${bS(S)}.html`,Z=new Blob([U],{type:"text/html;charset=utf-8"}),$=document.createElement("a");$.href=URL.createObjectURL(Z),$.download=K,document.body.appendChild($),$.click(),$.remove(),p({label:"HTML 저장 완료",detail:K,progress:1,tone:"success"}),setTimeout(()=>{URL.revokeObjectURL($.href)},1e3)}catch(S){console.error(S),p({label:"HTML 저장 실패",detail:S instanceof Error?S.message:"알 수 없는 오류",progress:null,tone:"error"}),alert("HTML 저장 중 오류가 발생했어요. 다시 시도해주세요.")}finally{f&&(f.disabled=!1,f.textContent=v)}}let N0=null;const ES=3e4;function L0(){let a=document.getElementById("sadv-activity");return a||(a=document.createElement("div"),a.id="sadv-activity",a.setAttribute("style",["position:fixed","top:16px","left:50%","transform:translateX(-50%)","z-index:10000010","width:min(420px,calc(100vw - 24px))","display:none","pointer-events:none","font-family:Pretendard Variable,SUIT Variable,Apple SD Gothic Neo,Noto Sans KR,sans-serif"].join(";")),a.innerHTML=`
     <div id="sadv-activity-card" style="border:1px solid rgba(64,196,255,.18);border-radius:16px;background:rgba(6,11,20,.96);box-shadow:0 20px 60px rgba(0,0,0,.35);backdrop-filter:blur(14px);padding:12px 14px 11px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div style="min-width:0">

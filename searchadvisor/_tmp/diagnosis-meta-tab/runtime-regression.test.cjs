@@ -108,3 +108,21 @@ test("loader tolerates legacy card template drift and patches cards via DOM clea
     /metricGrid\.style\.gridTemplateColumns = "repeat\(3,minmax\(0,1fr\)\)";/,
   );
 });
+
+test("saved tmp html exposes merge-aware export hooks", () => {
+  assert.ok(runtime.includes("window.__SEARCHADVISOR_EXPORT_PAYLOAD__ = EXPORT_PAYLOAD;"));
+  assert.ok(runtime.includes("const SITE_META_MAP = EXPORT_PAYLOAD.siteMeta || {};"));
+  assert.ok(runtime.includes("const MERGED_META = EXPORT_PAYLOAD.mergedMeta || null;"));
+  assert.ok(runtime.includes("function getSiteLabel(a) {\\r"));
+});
+
+test("saved tmp html uses merge-aware shell state and label matching", () => {
+  assert.ok(runtime.includes("setSnapshotMetaState(T);"));
+  assert.ok(runtime.includes("siteMeta:T.siteMeta||{},mergedMeta:T.mergedMeta||null"));
+  assert.ok(
+    runtime.includes(
+      "button.dataset.active = getSiteLabel(site) === activeSite || getSiteShortName(site) === activeSite ? 'true' : 'false';",
+    ),
+  );
+  assert.ok(runtime.includes("const searchTarget = (site + ' ' + getSiteLabel(site)).toLowerCase();"));
+});
