@@ -2810,17 +2810,6 @@ Error generating stack: `+l.message+`
           return wrap;
         }
         const latestDate = diagnosisLatest && diagnosisLatest.date ? diagnosisLatest.date : "-";
-        const formatSigned = function (value) {
-          return (value >= 0 ? "+" : "") + fmt(value);
-        };
-        const formatStartDelta = function (series) {
-          return (
-            fmt(series.current) +
-            ' <span style="font-size:11px;color:#7a9ab8">/ \uC2DC\uC791 \uB300\uBE44 ' +
-            formatSigned(series.delta) +
-            "</span>"
-          );
-        };
         const buildCodeCard = function (title, rows, accent, emptyText) {
           const card = document.createElement("div");
           card.style.cssText =
@@ -2895,7 +2884,7 @@ Error generating stack: `+l.message+`
         wrap.appendChild(
           chartCard(
             "\uC0C9\uC778 \uCD94\uC774",
-            formatStartDelta(diagnosisIndexedSeries),
+            fmt(diagnosisIndexedSeries.current),
             diagnosisIndexedSeries.color,
             sparkline(
               diagnosisIndexedSeries.values,
@@ -2910,7 +2899,7 @@ Error generating stack: `+l.message+`
         wrap.appendChild(
           chartCard(
             "\uC218\uC9D1\uC81C\uD55C \uCD94\uC774",
-            formatStartDelta(diagnosisRestrictedSeries),
+            fmt(diagnosisRestrictedSeries.current),
             diagnosisRestrictedSeries.color,
             sparkline(
               diagnosisRestrictedSeries.values,
@@ -2925,7 +2914,7 @@ Error generating stack: `+l.message+`
         wrap.appendChild(
           chartCard(
             "SEO \uBB38\uC81C \uCD94\uC774",
-            formatStartDelta(diagnosisSeoSeries),
+            fmt(diagnosisSeoSeries.current),
             diagnosisSeoSeries.color,
             sparkline(
               diagnosisSeoSeries.values,
@@ -2940,7 +2929,7 @@ Error generating stack: `+l.message+`
         wrap.appendChild(
           chartCard(
             "\uC0C9\uC778 \uC81C\uC678 \uCD94\uC774",
-            formatStartDelta(diagnosisExcludedSeries),
+            fmt(diagnosisExcludedSeries.current),
             diagnosisExcludedSeries.color,
             sparkline(
               diagnosisExcludedSeries.values,
@@ -2952,31 +2941,6 @@ Error generating stack: `+l.message+`
             diagnosisDates,
           ),
         );
-        wrap.appendChild(secTitle("\uCD5C\uC2E0 \uBD84\uB958 \uC694\uC57D"));
-        diagnosisSeries.forEach(function (series) {
-          const box = document.createElement("div");
-          box.style.cssText =
-            "background:#0d1829;border:1px solid #1a2d45;border-radius:9px;padding:10px 11px;margin-bottom:6px";
-          box.innerHTML =
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:11px;color:#7a9ab8">' +
-            series.label +
-            '</span><b style="color:' +
-            series.color +
-            '">' +
-            fmt(series.current) +
-            '\uAC74</b></div>' +
-            hbar(series.current, diagnosisTotalLatest || 1, series.color) +
-            '<div style="font-size:10px;color:#3d5a78;margin-top:5px">\uC2DC\uC791 \uB300\uBE44 <b style="color:' +
-            (series.delta >= 0 ? C.green : C.red) +
-            '">' +
-            formatSigned(series.delta) +
-            '</b></div><div style="font-size:10px;color:#3d5a78;margin-top:2px">\uBE44\uC911 ' +
-            (diagnosisTotalLatest
-              ? Math.round((series.current / diagnosisTotalLatest) * 100)
-              : 0) +
-            "%</div>";
-          wrap.appendChild(box);
-        });
         wrap.appendChild(secTitle("SEO \uBB38\uC81C \uCF54\uB4DC"));
         wrap.appendChild(
           buildCodeCard(
