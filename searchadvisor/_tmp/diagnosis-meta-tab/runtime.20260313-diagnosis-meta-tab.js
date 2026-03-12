@@ -3545,16 +3545,8 @@ function barchart(vals, labels, H, col, unit) {\r
         : exposeResults[i] && exposeResults[i].status === "fulfilled"
           ? buildSiteSummaryRow(site, exposeResults[i].value)
           : buildSiteSummaryRow(site, null),
-    );`),s=Ho(s,`      if (r.clicks && r.clicks.length > 1) {
-        const miniDates = (r.logs || []).map((l) => fmtB(l.date));
-        const mini = sparkline(r.clicks, miniDates, 34, col, "??);
-        mini.style.cssText += "opacity:.7";
-        card.appendChild(mini);
-      }`,`      if (r.clicks && r.clicks.length > 1) {
-        const miniDates = (r.logs || []).map((l) => fmtB(l.date));
-        const mini = sparkline(r.clicks, miniDates, 34, col, "??);
-        mini.style.cssText += "opacity:.7";
-        card.appendChild(mini);
+    );`),s=Ho(s,`        card.appendChild(mini);
+      }`,`        card.appendChild(mini);
       }
       const indexBlock = document.createElement("div");
       indexBlock.style.cssText =
@@ -3562,18 +3554,18 @@ function barchart(vals, labels, H, col, unit) {\r
       if (r.diagnosisIndexedValues && r.diagnosisIndexedValues.length > 1) {
         indexBlock.innerHTML =
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">' +
-          '<span style="font-size:10px;font-weight:700;color:#7a9ab8">색인 추이</span>' +
+          '<span style="font-size:10px;font-weight:700;color:#7a9ab8">\uc0c9\uc778 \ucd94\uc774</span>' +
           '<span style="font-size:12px;font-weight:800;color:' +
           C.green +
           '">' +
           fmt(r.diagnosisIndexedCurrent) +
-          '건</span></div>';
+          '\uac74</span></div>';
         const indexMini = sparkline(
           r.diagnosisIndexedValues,
           r.diagnosisIndexedDates,
           42,
           C.green,
-          "건",
+          "\uac74",
           { minValue: 0 },
         );
         indexMini.style.cssText += "opacity:.86";
@@ -3585,8 +3577,8 @@ function barchart(vals, labels, H, col, unit) {\r
           r.diagnosisMetaStatus == null ? "-" : String(r.diagnosisMetaStatus);
         indexBlock.innerHTML =
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">' +
-          '<span style="font-size:10px;font-weight:700;color:#7a9ab8">색인 추이</span>' +
-          '<span style="font-size:11px;color:#3d5a78">응답 확인</span></div>' +
+          '<span style="font-size:10px;font-weight:700;color:#7a9ab8">\uc0c9\uc778 \ucd94\uc774</span>' +
+          '<span style="font-size:11px;color:#3d5a78">\uc751\ub2f5 \ud655\uc778</span></div>' +
           '<div style="font-size:10px;line-height:1.55;color:#6482a2">HTTP ' +
           httpText +
           " / code " +
