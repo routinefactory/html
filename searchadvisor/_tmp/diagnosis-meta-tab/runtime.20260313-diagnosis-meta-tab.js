@@ -2632,7 +2632,7 @@ Error generating stack: `+l.message+`
     const diagnosisStateMeta = {
       "1": { label: "\uC0C9\uC778", color: C.green },
       "2": { label: "\uC218\uC9D1\uC81C\uD55C", color: C.amber },
-      "3": { label: "\uAE30\uD0C0 \uC9C4\uB2E8", color: C.teal },
+      "3": { label: "\uC0C9\uC778 \uC81C\uC678", color: C.teal },
       "4": { label: "SEO \uBB38\uC81C", color: C.red },
     };
     const diagnosisCodeMeta = {
@@ -2655,6 +2655,12 @@ Error generating stack: `+l.message+`
         label: "\uC11C\uBC84 \uC811\uADFC \uBD88\uAC00\uB85C \uC218\uC9D1 \uC2E4\uD328",
         group: "restricted",
         color: C.orange,
+      },
+      "3003": {
+        label:
+          "meta robots\uC73C\uB85C \uC0C9\uC778\uC5D0\uC11C \uC81C\uC678\uB41C \uD398\uC774\uC9C0",
+        group: "excluded",
+        color: C.teal,
       },
       "4001": {
         label: "meta description \uB204\uB77D",
@@ -2726,7 +2732,7 @@ Error generating stack: `+l.message+`
     });
     const diagnosisIndexedSeries = diagnosisSeries[0];
     const diagnosisRestrictedSeries = diagnosisSeries[1];
-    const diagnosisOtherSeries = diagnosisSeries[2];
+    const diagnosisExcludedSeries = diagnosisSeries[2];
     const diagnosisSeoSeries = diagnosisSeries[3];
     const diagnosisIndexShare = diagnosisTotalLatest
       ? Math.round((diagnosisIndexedSeries.current / diagnosisTotalLatest) * 100)
@@ -2751,10 +2757,27 @@ Error generating stack: `+l.message+`
     const diagnosisRestrictedCodes = diagnosisCodeRows.filter(function (row) {
       return row.group === "restricted";
     });
+    const diagnosisExcludedCodes = diagnosisCodeRows.filter(function (row) {
+      return row.group === "excluded";
+    });
+    const diagnosisUnknownCodes = diagnosisCodeRows.filter(function (row) {
+      return row.group === "other";
+    });
     const diagnosisTopSeoCode =
       diagnosisSeoCodes.length > 0 ? diagnosisSeoCodes[0] : null;
     const diagnosisTopRestrictedCode =
       diagnosisRestrictedCodes.length > 0 ? diagnosisRestrictedCodes[0] : null;
+    const diagnosisTopExcludedCode =
+      diagnosisExcludedCodes.length > 0 ? diagnosisExcludedCodes[0] : null;
+    const diagnosisTopUnknownCode =
+      diagnosisUnknownCodes.length > 0 ? diagnosisUnknownCodes[0] : null;
+    const diagnosisUnknownTotal = diagnosisUnknownCodes.reduce(function (
+      sum,
+      row,
+    ) {
+      return sum + row.count;
+    },
+    0);
     const diagnosisStatus =
       diagnosisMeta && typeof diagnosisMeta.code !== "undefined"
         ? diagnosisMeta.code
@@ -2852,10 +2875,12 @@ Error generating stack: `+l.message+`
               color: diagnosisRestrictedSeries.color,
             },
             {
-              label: "\uC0C9\uC778 \uBE44\uC911",
-              value: diagnosisIndexShare + "%",
-              sub: diagnosisRangeText,
-              color: C.blue,
+              label: "\uC0C9\uC778 \uC81C\uC678 \uD398\uC774\uC9C0",
+              value: fmt(diagnosisExcludedSeries.current),
+              sub: diagnosisTopExcludedCode
+                ? diagnosisTopExcludedCode.label
+                : "\uC8FC\uC694 \uC0C9\uC778 \uC81C\uC678 \uC5C6\uC74C",
+              color: diagnosisExcludedSeries.color,
             },
           ]),
         );
@@ -2915,41 +2940,20 @@ Error generating stack: `+l.message+`
         );
         wrap.appendChild(
           chartCard(
-            "\uAE30\uD0C0 \uC9C4\uB2E8 \uCD94\uC774",
-            fmt(diagnosisOtherSeries.current) +
+            "\uC0C9\uC778 \uC81C\uC678 \uCD94\uC774",
+            fmt(diagnosisExcludedSeries.current) +
               " (" +
-              formatSigned(diagnosisOtherSeries.delta) +
+              formatSigned(diagnosisExcludedSeries.delta) +
               ")",
-            diagnosisOtherSeries.color,
+            diagnosisExcludedSeries.color,
             sparkline(
-              diagnosisOtherSeries.values,
+              diagnosisExcludedSeries.values,
               diagnosisDates,
               80,
-              diagnosisOtherSeries.color,
+              diagnosisExcludedSeries.color,
               "\uAC74",
             ),
             diagnosisDates,
-          ),
-        );
-        wrap.appendChild(
-          chartCard(
-            "\uCD5C\uC2E0 4\uBD84\uB958 \uBD84\uD3EC",
-            latestDate,
-            C.purple,
-            barchart(
-              diagnosisSeries.map(function (series) {
-                return series.current;
-              }),
-              diagnosisSeries.map(function (series) {
-                return series.label;
-              }),
-              70,
-              C.purple,
-              "\uAC74",
-            ),
-            diagnosisSeries.map(function (series) {
-              return series.label;
-            }),
           ),
         );
         wrap.appendChild(secTitle("\uCD5C\uC2E0 \uBD84\uB958 \uC694\uC57D"));
@@ -2995,10 +2999,55 @@ Error generating stack: `+l.message+`
             "\uC218\uC9D1\uC81C\uD55C \uCF54\uB4DC \uC9D1\uACC4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
           ),
         );
+        wrap.appendChild(secTitle("\uC0C9\uC778 \uC81C\uC678 \uCF54\uB4DC"));
+        wrap.appendChild(
+          buildCodeCard(
+            "\uCD5C\uC2E0 \uC0C9\uC778 \uC81C\uC678 \uC0C1\uC704 \uCF54\uB4DC",
+            diagnosisExcludedCodes.slice(0, 6),
+            C.teal,
+            "\uC0C9\uC778 \uC81C\uC678 \uCF54\uB4DC \uC9D1\uACC4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
+          ),
+        );
+        if (diagnosisUnknownCodes.length) {
+          wrap.appendChild(secTitle("\uBBF8\uC2DD\uBCC4 \uCF54\uB4DC"));
+          wrap.appendChild(
+            chartCard(
+              "\uCD5C\uC2E0 \uBBF8\uC2DD\uBCC4 \uBB38\uC81C \uBD84\uD3EC",
+              fmt(diagnosisUnknownTotal) +
+                "\uAC74" +
+                (diagnosisTopUnknownCode
+                  ? " / " + diagnosisTopUnknownCode.code
+                  : ""),
+              C.sub,
+              barchart(
+                diagnosisUnknownCodes.slice(0, 6).map(function (row) {
+                  return row.count;
+                }),
+                diagnosisUnknownCodes.slice(0, 6).map(function (row) {
+                  return row.code;
+                }),
+                70,
+                C.sub,
+                "\uAC74",
+              ),
+              diagnosisUnknownCodes.slice(0, 6).map(function (row) {
+                return row.code;
+              }),
+            ),
+          );
+          wrap.appendChild(
+            buildCodeCard(
+              "\uCD5C\uC2E0 \uBBF8\uC2DD\uBCC4 \uC0C1\uC704 \uCF54\uB4DC",
+              diagnosisUnknownCodes.slice(0, 6),
+              C.sub,
+              "\uBBF8\uC2DD\uBCC4 \uCF54\uB4DC \uC9D1\uACC4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
+            ),
+          );
+        }
         wrap.appendChild(
           ibox(
             "blue",
-            "\uC0C9\uC778 \uCD94\uC774\uB294 state 1, \uC218\uC9D1\uC81C\uD55C\uC740 state 2, SEO \uBB38\uC81C\uB294 state 4 \uAE30\uC900\uC73C\uB85C \uD45C\uC2DC\uD588\uC2B5\uB2C8\uB2E4. \uCF54\uB4DC \uBD84\uD574\uB294 latest typeCount bucket " +
+            "\uC0C9\uC778\uC740 state 1, \uC218\uC9D1\uC81C\uD55C\uC740 state 2, \uC0C9\uC778 \uC81C\uC678\uB294 state 3, SEO \uBB38\uC81C\uB294 state 4 \uAE30\uC900\uC73C\uB85C \uD45C\uC2DC\uD588\uC2B5\uB2C8\uB2E4. \uCF54\uB4DC \uBD84\uD574\uB294 latest typeCount bucket " +
               (diagnosisTypeBucketKey || "-") +
               " \uAE30\uC900 \uD604\uC7AC \uBD84\uD3EC\uB9CC \uBCF4\uC5EC\uC90D\uB2C8\uB2E4.",
           ),
@@ -3006,7 +3055,7 @@ Error generating stack: `+l.message+`
         wrap.appendChild(
           ibox(
             "amber",
-            "1000\uC740 \uC0C9\uC778, 2300/2400/2500\uC740 \uC218\uC9D1\uC81C\uD55C, 4001/4002/4007/4008\uC740 SEO \uBB38\uC81C\uB85C \uD574\uC11D\uD588\uC2B5\uB2C8\uB2E4. state 3\uC740 \uAD00\uCE21\uCE58\uAC00 \uC801\uC5B4 \uAE30\uD0C0 \uC9C4\uB2E8\uC73C\uB85C \uC720\uC9C0\uD588\uC2B5\uB2C8\uB2E4.",
+            "1000\uC740 \uC0C9\uC778, 2300/2400/2500\uC740 \uC218\uC9D1\uC81C\uD55C, 3003\uC740 meta robots\uC73C\uB85C \uC0C9\uC778\uC5D0\uC11C \uC81C\uC678\uB41C \uD398\uC774\uC9C0, 4001/4002/4007/4008\uC740 SEO \uBB38\uC81C\uB85C \uD574\uC11D\uD588\uC2B5\uB2C8\uB2E4. \uB4F1\uB85D\uB418\uC9C0 \uC54A\uC740 \uCF54\uB4DC\uB294 \uBBF8\uC2DD\uBCC4 \uBB38\uC81C\uB85C \uBB36\uC5B4 \uCD5C\uC2E0 \uBD84\uD3EC\uB97C \uBCC4\uB3C4 \uD45C\uC2DC\uD569\uB2C8\uB2E4.",
           ),
         );
         return wrap;
