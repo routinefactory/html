@@ -3588,10 +3588,12 @@ function barchart(vals, labels, H, col, unit) {\r
       card.appendChild(indexBlock);`),s=Ho(s,`    bdEl.innerHTML = "";
     bdEl.appendChild(wrap);
     bdEl.scrollTop = 0;
+    __sadvNotify();
   }`,`    if (requestId !== allViewReqId || curMode !== "all") return;
     bdEl.innerHTML = "";
     bdEl.appendChild(wrap);
     bdEl.scrollTop = 0;
+    __sadvNotify();
   }`),s=Ho(s,`        EXPORT_PAYLOAD.dataBySite[site] || {
           expose: null,
           crawl: null,
