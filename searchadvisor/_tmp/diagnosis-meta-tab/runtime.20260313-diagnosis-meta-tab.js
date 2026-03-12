@@ -2399,14 +2399,14 @@ Error generating stack: `+l.message+`
       const day = String(date.getUTCDate()).padStart(2, "0");
       return String(year) + month + day;
     };
-    const todayKst = new Date(
+    const todayKstLocal = new Date(
       new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }),
     );
-    const yesterdayKst = new Date(
+    const todayKst = new Date(
       Date.UTC(
-        todayKst.getFullYear(),
-        todayKst.getMonth(),
-        todayKst.getDate() - 1,
+        todayKstLocal.getFullYear(),
+        todayKstLocal.getMonth(),
+        todayKstLocal.getDate(),
       ),
     );
     const latestExposeDate =
@@ -2418,9 +2418,7 @@ Error generating stack: `+l.message+`
         ? parseYmd(exposeLogs[0].date)
         : null;
     const effectiveEndDate =
-      latestExposeDate && latestExposeDate < yesterdayKst
-        ? latestExposeDate
-        : yesterdayKst;
+      latestExposeDate && latestExposeDate < todayKst ? latestExposeDate : todayKst;
     const windowStartDate = new Date(effectiveEndDate.getTime() - 40 * 864e5);
     const effectiveStartDate =
       earliestExposeDate && earliestExposeDate > windowStartDate
