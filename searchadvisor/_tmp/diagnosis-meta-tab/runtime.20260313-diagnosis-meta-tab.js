@@ -3464,7 +3464,7 @@ function barchart(vals, labels, H, col, unit) {\r
         return wrap;
       },
       insight: function () {`),s=Ho(s,`    bdEl.innerHTML =
-      '<div style="padding:30px 20px;text-align:center;color:#3d5a78">???꾩껜 ?곗씠??濡쒕뵫 以?..</div>';`,`    const loading = document.createElement("div");
+      '<div style="padding:30px 20px;text-align:center;color:#3d5a78">⏳ 전체 데이터 로딩 중...</div>';\r`,`    const loading = document.createElement("div");
     loading.style.cssText =
       "padding:24px 18px 20px;color:#7a9ab8;text-align:left;line-height:1.6";
     loading.innerHTML =
