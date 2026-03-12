@@ -2586,7 +2586,51 @@ function barchart(vals, labels, H, col, unit) {\r
     window.__sadvR = R;
     renderTab(R);
     __sadvNotify();
-  }`),s=Ho(s,`          res.status === "fulfilled"
+  }`),s=Ho(s,`    labelEl.innerHTML = \`<span>\${site.replace(/^https?:\\/\\//, "")}</span>\`;`,`    labelEl.innerHTML = \`<span>\${site.replace(/^https?:\\/\\//, "")}</span>\`;
+    const warmData =
+      memCache[site] && memCache[site].detailLoaded
+        ? memCache[site]
+        : normalizeSiteData(getCachedData(site));
+    if (
+      warmData &&
+      warmData.detailLoaded &&
+      warmData.expose &&
+      warmData.expose.items &&
+      warmData.expose.items.length &&
+      hasDiagnosisMetaSnapshot(warmData)
+    ) {
+      const warmR = buildRenderers(
+        warmData.expose,
+        warmData.crawl,
+        warmData.backlink,
+        warmData.diagnosisMeta,
+        warmData.diagnosisMetaStatus,
+        warmData.diagnosisMetaRange,
+      );
+      window.__sadvR = warmR;
+      renderTab(warmR);
+      __sadvNotify();
+      return;
+    }`),s=Ho(s,`    setAllSitesLabel();
+    const loading = document.createElement("div");`,`    setAllSitesLabel();
+    const allWarm =
+      allSites.length > 0 &&
+      allSites.every(function (site) {
+        const warmData =
+          memCache[site] && memCache[site].expose
+            ? memCache[site]
+            : normalizeSiteData(getCachedData(site));
+        return !!(
+          warmData &&
+          warmData.expose &&
+          hasDiagnosisMetaSnapshot(warmData)
+        );
+      });
+    const loading = document.createElement("div");`),s=Ho(s,`    bdEl.innerHTML = "";
+    bdEl.appendChild(loading);`,`    if (!allWarm) {
+      bdEl.innerHTML = "";
+      bdEl.appendChild(loading);
+    }`),s=Ho(s,`          res.status === "fulfilled"
             ? normalizeSiteData(res.value)
             : { expose: null, crawl: null, backlink: null, detailLoaded: false };`,`          res.status === "fulfilled"
             ? normalizeSiteData(res.value)
@@ -2603,6 +2647,25 @@ function barchart(vals, labels, H, col, unit) {\r
       backlink: detailLoaded ? (data.backlink ?? null) : null,
       detailLoaded,
     };
+  }`,`  function normalizeSiteData(data) {
+    if (!data) return null;
+    const expose = data.expose || null,
+      detailLoaded =
+        typeof data.detailLoaded === "boolean"
+          ? data.detailLoaded
+          : "crawl" in data || "backlink" in data;
+    const normalized = {
+      expose,
+      crawl: detailLoaded ? (data.crawl ?? null) : null,
+      backlink: detailLoaded ? (data.backlink ?? null) : null,
+      detailLoaded,
+    };
+    if ("diagnosisMeta" in data) normalized.diagnosisMeta = data.diagnosisMeta ?? null;
+    if ("diagnosisMetaStatus" in data) normalized.diagnosisMetaStatus = data.diagnosisMetaStatus ?? null;
+    if ("diagnosisMetaRange" in data) normalized.diagnosisMetaRange = data.diagnosisMetaRange ?? null;
+    if ("diagnosisMetaFetchState" in data) normalized.diagnosisMetaFetchState = data.diagnosisMetaFetchState ?? null;
+    if ("diagnosisMetaFetchedAt" in data) normalized.diagnosisMetaFetchedAt = data.diagnosisMetaFetchedAt ?? null;
+    return normalized;
   }`),s=Ho(s,`        const result = {
           expose,
           crawl: null,
