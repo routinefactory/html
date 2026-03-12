@@ -2597,38 +2597,12 @@ function barchart(vals, labels, H, col, unit) {\r
         typeof data.detailLoaded === "boolean"
           ? data.detailLoaded
           : "crawl" in data || "backlink" in data;
-    const hasDiagnosisMeta =
-      "diagnosisMeta" in data ||
-      "diagnosisMetaStatus" in data ||
-      "diagnosisMetaRange" in data ||
-      "diagnosisMetaFetchState" in data ||
-      "diagnosisMetaFetchedAt" in data;
-    const result = {
+    return {
       expose,
       crawl: detailLoaded ? (data.crawl ?? null) : null,
       backlink: detailLoaded ? (data.backlink ?? null) : null,
       detailLoaded,
     };
-    if (hasDiagnosisMeta) {
-      result.diagnosisMeta = data.diagnosisMeta ?? null;
-      result.diagnosisMetaStatus =
-        typeof data.diagnosisMetaStatus !== "undefined"
-          ? data.diagnosisMetaStatus
-          : null;
-      result.diagnosisMetaRange =
-        typeof data.diagnosisMetaRange !== "undefined"
-          ? data.diagnosisMetaRange
-          : null;
-      result.diagnosisMetaFetchState =
-        typeof data.diagnosisMetaFetchState === "string"
-          ? data.diagnosisMetaFetchState
-          : null;
-      result.diagnosisMetaFetchedAt =
-        typeof data.diagnosisMetaFetchedAt === "number"
-          ? data.diagnosisMetaFetchedAt
-          : null;
-    }
-    return result;
   }`),s=Ho(s,`        const result = {
           expose,
           crawl: null,
