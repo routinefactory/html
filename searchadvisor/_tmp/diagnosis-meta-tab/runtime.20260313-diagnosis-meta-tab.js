@@ -3552,13 +3552,13 @@ function barchart(vals, labels, H, col, unit) {\r
       }
       const indexBlock = document.createElement("div");
       indexBlock.style.cssText =
-        "margin-top:8px;padding-top:8px;border-top:1px solid rgba(26,45,69,.9)";
+        "margin-top:8px;padding-top:8px;border-top:1px solid " + col + "33";
       if (r.diagnosisIndexedValues && r.diagnosisIndexedValues.length > 1) {
         indexBlock.innerHTML =
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">' +
           '<span style="font-size:10px;font-weight:700;color:#7a9ab8">\uc0c9\uc778 \ucd94\uc774</span>' +
           '<span style="font-size:12px;font-weight:800;color:' +
-          C.green +
+          col +
           '">' +
           fmt(r.diagnosisIndexedCurrent) +
           '\uac74</span></div>';
@@ -3566,11 +3566,11 @@ function barchart(vals, labels, H, col, unit) {\r
           r.diagnosisIndexedValues,
           r.diagnosisIndexedDates,
           42,
-          C.green,
+          col,
           "\uac74",
           { minValue: 0 },
         );
-        indexMini.style.cssText += "opacity:.86";
+        indexMini.style.cssText += "opacity:.82";
         indexBlock.appendChild(indexMini);
       } else {
         const metaCode =
@@ -3587,7 +3587,8 @@ function barchart(vals, labels, H, col, unit) {\r
           metaCode +
           "</div>";
       }
-      card.appendChild(indexBlock);`),s=Ho(s,`    bdEl.innerHTML = "";
+      card.appendChild(indexBlock);`),s=Ho(s,`      const col = SITE_COLORS_MAP[r.site] || COLORS[i % COLORS.length];`,`      const allCardColors = [C.green, C.blue, C.amber, C.teal, C.purple];
+      const col = allCardColors[i % allCardColors.length];`),s=Ho(s,`      card.innerHTML = \`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="width:8px;height:8px;border-radius:50%;background:\${col};flex-shrink:0"></div><span style="font-size:12px;font-weight:700;line-height:1.3;color:#e0ecff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">\${shortName}</span>\${prevBadge}</div><span style="font-size:11px;line-height:1.2;color:\${trendCol};flex-shrink:0">\${trendIcon}</span></div><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px"><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.green}">\${fmt(r.totalC)}</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">?대┃</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.blue}">\${(r.totalE / 10000).toFixed(1)}留?/div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">?몄텧</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.amber}">\${r.avgCtr}%</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">CTR</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${trendCol}">\${fmt(Math.round(r.trend * 7))}</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">二쇨컙異붿꽭</div></div></div>\`;`,`      card.innerHTML = \`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="width:8px;height:8px;border-radius:50%;background:\${col};flex-shrink:0;box-shadow:0 0 0 4px \${col}12"></div><span style="font-size:12px;font-weight:700;line-height:1.3;color:#e0ecff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px">\${shortName}</span></div></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:8px"><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.green}">\${fmt(r.totalC)}</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">\uD074\uB9AD</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.blue}">\${(r.totalE / 10000).toFixed(1)}\uB9CC</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">\uB178\uCD9C</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.amber}">\${r.avgCtr}%</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">CTR</div></div></div>\`;`),s=Ho(s,`        mini.style.cssText += "opacity:.7";`,`        mini.style.cssText += "opacity:.82";`),s=Ho(s,`    bdEl.innerHTML = "";
     bdEl.appendChild(wrap);
     bdEl.scrollTop = 0;
     __sadvNotify();

@@ -69,3 +69,28 @@ test("runtime no longer reads or writes unscoped global cache keys", () => {
     /localStorage\.removeItem\(DATA_LS_PREFIX \+ btoa\(site\)\.replace\(\/=\/g, ""\)\)/,
   );
 });
+
+test("all-sites cards use per-card colors and remove noisy trend badges", () => {
+  assert.ok(
+    runtime.includes(
+      "const allCardColors = [C.green, C.blue, C.amber, C.teal, C.purple];",
+    ),
+  );
+  assert.ok(
+    runtime.includes("grid-template-columns:repeat(3,minmax(0,1fr));"),
+  );
+  assert.ok(
+    runtime.includes(
+      'box-shadow:0 0 0 4px \\${col}12',
+    ),
+  );
+  assert.ok(
+    runtime.includes(
+      'max-width:240px">\\${shortName}</span></div></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));',
+    ),
+  );
+  assert.match(
+    runtime,
+    /const indexMini = sparkline\([\s\S]*?r\.diagnosisIndexedDates,\r?\n\s*42,\r?\n\s*col,/,
+  );
+});
