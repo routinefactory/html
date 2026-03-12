@@ -228,8 +228,9 @@ Error generating stack: `+l.message+`
   function hideTip() {\r
     tip().style.display = "none";\r
   }\r
-  function sparkline(vals, labels, H, col, unit) {\r
+  function sparkline(vals, labels, H, col, unit, opts) {\r
     unit = unit || "";\r
+    opts = opts || {};\r
     if (!vals || vals.length < 2) return document.createElement("div");\r
     const W2 = CHART_W;\r
     const isFiniteValue = function (value) {\r
@@ -237,12 +238,16 @@ Error generating stack: `+l.message+`
     };\r
     const definedVals = vals.filter(isFiniteValue);\r
     if (!definedVals.length) return document.createElement("div");\r
+    const floorMin =\r
+      typeof opts.minValue === "number" && Number.isFinite(opts.minValue)\r
+        ? opts.minValue\r
+        : null;\r
     const pL = 4,\r
       pR = 4,\r
       pT = 6,\r
       pB = 6,\r
       mx = Math.max(...definedVals),\r
-      mn = Math.min(...definedVals),\r
+      mn = floorMin == null ? Math.min(...definedVals) : Math.min(floorMin, Math.min(...definedVals)),\r
       rng = mx - mn || 1;\r
     const showYAxisGuides = H >= 65;\r
     const formatAxisValue = function (value) {\r
@@ -1870,6 +1875,7 @@ function barchart(vals, labels, H, col, unit) {\r
                 80,\r
                 diagnosisIndexedSeries.color,\r
                 "\uAC74",\r
+                { minValue: 0 },\r
               ),\r
               dates,\r
             ),\r
@@ -3107,6 +3113,7 @@ function barchart(vals, labels, H, col, unit) {\r
               80,
               diagnosisIndexedSeries.color,
               "\uAC74",
+              { minValue: 0 },
             ),
             diagnosisDates,
           ),
@@ -3122,6 +3129,7 @@ function barchart(vals, labels, H, col, unit) {\r
               80,
               diagnosisRestrictedSeries.color,
               "\uAC74",
+              { minValue: 0 },
             ),
             diagnosisDates,
           ),
@@ -3137,6 +3145,7 @@ function barchart(vals, labels, H, col, unit) {\r
               80,
               diagnosisSeoSeries.color,
               "\uAC74",
+              { minValue: 0 },
             ),
             diagnosisDates,
           ),
@@ -3152,6 +3161,7 @@ function barchart(vals, labels, H, col, unit) {\r
               80,
               diagnosisExcludedSeries.color,
               "\uAC74",
+              { minValue: 0 },
             ),
             diagnosisDates,
           ),
