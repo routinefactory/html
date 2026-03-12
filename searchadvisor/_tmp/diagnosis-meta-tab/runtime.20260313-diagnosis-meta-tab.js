@@ -1180,20 +1180,20 @@ function barchart(vals, labels, H, col, unit) {\r
     } catch (e) {}\r
   }\r
   function getCachedData(site) {\r
-    const d = lsGet(DATA_LS_PREFIX + btoa(site).replace(/=/g, ""));\r
+    const d = lsGet(getSiteDataCacheKey(site));\r
     if (!d) return null;\r
     if (Date.now() - d.ts > DATA_TTL) return null;\r
     return d.data;\r
   }\r
   function setCachedData(site, data) {\r
-    lsSet(DATA_LS_PREFIX + btoa(site).replace(/=/g, ""), {\r
+    lsSet(getSiteDataCacheKey(site), {\r
       ts: Date.now(),\r
       data,\r
     });\r
   }\r
   function clearCachedData(site) {\r
     try {\r
-      localStorage.removeItem(DATA_LS_PREFIX + btoa(site).replace(/=/g, ""));\r
+      localStorage.removeItem(getSiteDataCacheKey(site));\r
     } catch (e) {}\r
   }\r
   const accountLabel = getAccountLabel();\r
@@ -1250,10 +1250,24 @@ function barchart(vals, labels, H, col, unit) {\r
       \`<div style="padding:28px 20px;text-align:center"><div style="font-size:32px">\${onAdvisor ? "\\uD83D\\uDD12" : "\\uD83E\\uDDED"}</div><div style="color:#ffca28;font-weight:800;margin:10px 0 8px">\${title}</div><div style="color:#7a9ab8;font-size:12px;line-height:1.8">\${desc}</div><div style="margin-top:14px"><a href="https://searchadvisor.naver.com/" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#132236;border:1px solid #40c4ff55;color:#40c4ff;text-decoration:none;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700">서치어드바이저 열기 ↗</a></div><div style="margin-top:12px;font-size:10px;color:#3d5a78">현재 페이지: \${(host || "unknown").replace(/"/g, "&quot;")}</div></div>\`;\r
     return;\r
   }\r
+  function getCacheNamespace() {\r
+    const parts = [];\r
+    const labelId = accountIdFromLabel(accountLabel);\r
+    if (labelId && labelId !== "unknown") parts.push(labelId);\r
+    if (encId) parts.push(fileSafe(String(encId).trim()));\r
+    if (parts.length) return parts.join("_");\r
+    return "unknown";\r
+  }\r
+  function getSiteListCacheKey() {\r
+    return SITE_LS_KEY + "_" + getCacheNamespace();\r
+  }\r
+  function getSiteDataCacheKey(site) {\r
+    return DATA_LS_PREFIX + getCacheNamespace() + "_" + btoa(site).replace(/=/g, "");\r
+  }\r
   let allSites = [];\r
   async function loadSiteList(force = false) {\r
     if (!force) {\r
-      const c = lsGet(SITE_LS_KEY);\r
+      const c = lsGet(getSiteListCacheKey());\r
       if (c && c.ts && Date.now() - c.ts < 864e5 && c.sites && c.sites.length) {\r
         allSites = c.sites;\r
         return;\r
@@ -1278,7 +1292,7 @@ function barchart(vals, labels, H, col, unit) {\r
       if (sm) allSites = [decodeURIComponent(sm[1])];\r
     }\r
     if (allSites.length)\r
-      lsSet(SITE_LS_KEY, { ts: Date.now(), sites: allSites });\r
+      lsSet(getSiteListCacheKey(), { ts: Date.now(), sites: allSites });\r
   }\r
   function assignColors() {\r
     allSites.forEach((s, i) => {\r

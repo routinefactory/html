@@ -36,3 +36,36 @@ test("runtime does not keep identity Ho patches for all-sites loading anchors", 
 test("all-sites diagnosis index block patch is still present", () => {
   assert.match(runtime, /const indexBlock = document\.createElement\("div"\);/);
 });
+
+test("runtime namespaces local cache keys by account identity", () => {
+  assert.ok(runtime.includes("function getCacheNamespace() {\\r"));
+  assert.ok(runtime.includes("accountIdFromLabel(accountLabel);\\r"));
+  assert.ok(runtime.includes('if (encId) parts.push(fileSafe(String(encId).trim()));\\r'));
+  assert.ok(runtime.includes('return "unknown";\\r'));
+  assert.ok(
+    runtime.includes(
+      'function getSiteListCacheKey() {\\r\n    return SITE_LS_KEY + "_" + getCacheNamespace();\\r\n  }',
+    ),
+  );
+  assert.ok(
+    runtime.includes(
+      'function getSiteDataCacheKey(site) {\\r\n    return DATA_LS_PREFIX + getCacheNamespace() + "_" + btoa(site).replace(/=/g, "");\\r\n  }',
+    ),
+  );
+});
+
+test("runtime no longer reads or writes unscoped global cache keys", () => {
+  assert.doesNotMatch(runtime, /lsGet\(SITE_LS_KEY\)/);
+  assert.doesNotMatch(
+    runtime,
+    /lsGet\(DATA_LS_PREFIX \+ btoa\(site\)\.replace\(\/=\/g, ""\)\)/,
+  );
+  assert.doesNotMatch(
+    runtime,
+    /lsSet\(DATA_LS_PREFIX \+ btoa\(site\)\.replace\(\/=\/g, ""\),/,
+  );
+  assert.doesNotMatch(
+    runtime,
+    /localStorage\.removeItem\(DATA_LS_PREFIX \+ btoa\(site\)\.replace\(\/=\/g, ""\)\)/,
+  );
+});
