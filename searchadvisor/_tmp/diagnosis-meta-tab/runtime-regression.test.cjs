@@ -117,6 +117,8 @@ test("saved tmp html exposes merge-aware export hooks", () => {
 });
 
 test("saved tmp html uses merge-aware shell state and label matching", () => {
+  assert.ok(runtime.includes("var snapshotShellMetaState={siteMeta:{},mergedMeta:null};"));
+  assert.ok(runtime.includes("function setSnapshotMetaState(state){"));
   assert.ok(runtime.includes("setSnapshotMetaState(T);"));
   assert.ok(runtime.includes("siteMeta:T.siteMeta||{},mergedMeta:T.mergedMeta||null"));
   assert.ok(
