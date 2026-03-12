@@ -232,12 +232,17 @@ Error generating stack: `+l.message+`
     unit = unit || "";\r
     if (!vals || vals.length < 2) return document.createElement("div");\r
     const W2 = CHART_W;\r
+    const isFiniteValue = function (value) {\r
+      return typeof value === "number" && Number.isFinite(value);\r
+    };\r
+    const definedVals = vals.filter(isFiniteValue);\r
+    if (!definedVals.length) return document.createElement("div");\r
     const pL = 4,\r
       pR = 4,\r
       pT = 6,\r
       pB = 6,\r
-      mx = Math.max(...vals),\r
-      mn = Math.min(...vals),\r
+      mx = Math.max(...definedVals),\r
+      mn = Math.min(...definedVals),\r
       rng = mx - mn || 1;\r
     const showYAxisGuides = H >= 65;\r
     const formatAxisValue = function (value) {\r
@@ -250,23 +255,52 @@ Error generating stack: `+l.message+`
     const uid = "g" + Math.random().toString(36).slice(2, 6),\r
       cid = "c" + uid,\r
       wid = "w" + uid;\r
-    const pts = vals.map((v, i) => [\r
-      +(pL + (i * (W2 - pL - pR)) / (vals.length - 1)).toFixed(1),\r
-      +(pT + (1 - (v - mn) / rng) * (H - pT - pB)).toFixed(1),\r
-    ]);\r
-    const path = "M" + pts.map((p) => p.join(",")).join(" L");\r
-    const area =\r
-      "M" +\r
-      pts[0][0] +\r
-      "," +\r
-      H +\r
-      " L" +\r
-      pts.map((p) => p.join(",")).join(" L") +\r
-      " L" +\r
-      pts[pts.length - 1][0] +\r
-      "," +\r
-      H +\r
-      " Z";\r
+    const pts = vals.map((v, i) => {\r
+      const x = +(pL + (i * (W2 - pL - pR)) / (vals.length - 1)).toFixed(1);\r
+      return isFiniteValue(v)\r
+        ? [x, +(pT + (1 - (v - mn) / rng) * (H - pT - pB)).toFixed(1)]\r
+        : [x, null];\r
+    });\r
+    const cleanSegments = [];\r
+    let currentSegment = null;\r
+    pts.forEach(function (pt) {\r
+      if (pt[1] == null) {\r
+        if (currentSegment && currentSegment.length) {\r
+          cleanSegments.push(currentSegment);\r
+          currentSegment = null;\r
+        }\r
+        return;\r
+      }\r
+      if (!currentSegment) {\r
+        currentSegment = [];\r
+      }\r
+      currentSegment.push(pt);\r
+    });\r
+    if (currentSegment && currentSegment.length) {\r
+      cleanSegments.push(currentSegment);\r
+    }\r
+    const path = cleanSegments\r
+      .map(function (seg) {\r
+        return "M" + seg.map((p) => p.join(",")).join(" L");\r
+      })\r
+      .join(" ");\r
+    const area = cleanSegments\r
+      .map(function (seg) {\r
+        return (\r
+          "M" +\r
+          seg[0][0] +\r
+          "," +\r
+          H +\r
+          " L" +\r
+          seg.map((p) => p.join(",")).join(" L") +\r
+          " L" +\r
+          seg[seg.length - 1][0] +\r
+          "," +\r
+          H +\r
+          " Z"\r
+        );\r
+      })\r
+      .join(" ");\r
     const guideMarkup = showYAxisGuides\r
       ? [mx, mn + (mx - mn) / 2, mn]\r
           .reduce(function (acc, value) {\r
@@ -379,9 +413,13 @@ Error generating stack: `+l.message+`
       svg.querySelector("#" + wid).setAttribute("x2", pt[0]);\r
       svg.querySelector("#" + wid).setAttribute("opacity", "1");\r
       const c = svg.querySelector("#" + cid);\r
-      c.setAttribute("cx", pt[0]);\r
-      c.setAttribute("cy", pt[1]);\r
-      c.setAttribute("opacity", "1");\r
+      if (pt[1] == null) {\r
+        c.setAttribute("opacity", "0");\r
+      } else {\r
+        c.setAttribute("cx", pt[0]);\r
+        c.setAttribute("cy", pt[1]);\r
+        c.setAttribute("opacity", "1");\r
+      }\r
       showTip(\r
         e,\r
         '<span style="color:#7a9ab8;font-size:10px">' +\r
@@ -389,8 +427,9 @@ Error generating stack: `+l.message+`
           '</span><br><b style="color:' +\r
           col +\r
           '">' +\r
-          fmt(vals[idx]) +\r
-          unit +\r
+          (isFiniteValue(vals[idx])\r
+            ? fmt(vals[idx]) + unit\r
+            : "\uB370\uC774\uD130 \uC5C6\uC74C") +\r
           "</b>",\r
       );\r
     });\r
@@ -2801,7 +2840,7 @@ function barchart(vals, labels, H, col, unit) {\r
     const diagnosisIndexedOverviewValues =
       logs.length > diagnosisIndexedTailValues.length
         ? Array(logs.length - diagnosisIndexedTailValues.length)
-            .fill(0)
+            .fill(null)
             .concat(diagnosisIndexedTailValues)
         : diagnosisIndexedTailValues.slice(-logs.length);
     const diagnosisStates = ["1", "2", "3", "4"];
