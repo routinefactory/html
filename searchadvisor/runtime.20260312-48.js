@@ -192,7 +192,7 @@ Error generating stack: `+l.message+`
     s ? s.slice(0, 4) + "-" + s.slice(4, 6) + "-" + s.slice(6, 8) : "";\r
   const fmtB = (s) => (s ? s.slice(4, 6) + "/" + s.slice(6, 8) : "");\r
   const PNL = 490;\r
-  const W2 = PNL - 32;\r
+  const CHART_W = PNL - 32;\r
   const DOW = ["일", "월", "화", "수", "목", "금", "토"];\r
   const SITE_COLORS_MAP = {};\r
   const SITE_LS_KEY = "sadv_sites_v1";\r
@@ -231,6 +231,7 @@ Error generating stack: `+l.message+`
   function sparkline(vals, labels, H, col, unit) {\r
     unit = unit || "";\r
     if (!vals || vals.length < 2) return document.createElement("div");\r
+    const W2 = CHART_W;\r
     const pL = 4,\r
       pR = 4,\r
       pT = 6,\r
@@ -259,18 +260,21 @@ Error generating stack: `+l.message+`
       H +\r
       " Z";\r
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");\r
-    svg.setAttribute("width", W2);\r
+    svg.setAttribute("width", "100%");\r
     svg.setAttribute("height", H);\r
-    svg.style.cssText = "display:block;max-width:100%;cursor:crosshair";\r
+    svg.setAttribute("viewBox", `0 0 ${W2} ${H}`);\r
+    svg.setAttribute("preserveAspectRatio", "none");\r
+    svg.style.cssText = "display:block;width:100%;height:auto;cursor:crosshair";\r
     svg.innerHTML = \`<defs><linearGradient id="\${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="\${col}" stop-opacity="0.22"/><stop offset="100%" stop-color="\${col}" stop-opacity="0.01"/></linearGradient></defs><path d="\${area}" fill="url(#\${uid})"/><path d="\${path}" fill="none" stroke="\${col}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><line id="\${wid}" x1="0" y1="0" x2="0" y2="\${H}" stroke="#3d5a78" stroke-width="1" stroke-dasharray="3,2" opacity="0"/><circle id="\${cid}" cx="0" cy="0" r="3.5" fill="\${col}" stroke="#060b14" stroke-width="1.5" opacity="0"/>\`;\r
     svg.addEventListener("mousemove", function (e) {\r
       const rect = svg.getBoundingClientRect(),\r
-        rx = e.clientX - rect.left;\r
+        rx = e.clientX - rect.left,\r
+        chartX = rect.width ? (rx / rect.width) * W2 : rx;\r
       const idx = Math.max(\r
           0,\r
           Math.min(\r
             vals.length - 1,\r
-            Math.round(((rx - pL) / (W2 - pL - pR)) * (vals.length - 1)),\r
+            Math.round(((chartX - pL) / (W2 - pL - pR)) * (vals.length - 1)),\r
           ),\r
         ),\r
         pt = pts[idx];\r
@@ -297,13 +301,16 @@ Error generating stack: `+l.message+`
   function barchart(vals, labels, H, col, unit) {\r
     unit = unit || "";\r
     if (!vals || !vals.length) return document.createElement("div");\r
+    const W2 = CHART_W;\r
     const mx = Math.max(...vals) || 1,\r
       gap = 3,\r
       bw = Math.max(3, (W2 - gap * (vals.length + 1)) / vals.length);\r
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");\r
-    svg.setAttribute("width", W2);\r
+    svg.setAttribute("width", "100%");\r
     svg.setAttribute("height", H);\r
-    svg.style.cssText = "display:block;max-width:100%";\r
+    svg.setAttribute("viewBox", `0 0 ${W2} ${H}`);\r
+    svg.setAttribute("preserveAspectRatio", "none");\r
+    svg.style.cssText = "display:block;width:100%;height:auto";\r
     const uid = "b" + Math.random().toString(36).slice(2, 5);\r
     svg.innerHTML = \`<defs><linearGradient id="\${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="\${col}" stop-opacity="0.9"/><stop offset="100%" stop-color="\${col}" stop-opacity="0.35"/></linearGradient></defs>\`;\r
     vals.forEach(function (v, i) {\r
@@ -458,11 +465,11 @@ Error generating stack: `+l.message+`
   }\r
   const inj = document.createElement("style");\r
   inj.id = "sadv-inj";\r
-  inj.textContent = \`html{margin-right:\${PNL}px !important;transition:margin-right .25s ease;box-sizing:border-box;}\`;\r
+  inj.textContent = \`html{margin-right:min(\${PNL}px,100vw) !important;transition:margin-right .25s ease;box-sizing:border-box;}\`;\r
   document.head.appendChild(inj);\r
   const p = document.createElement("div");\r
   p.id = "sadv-p";\r
-  p.style.cssText = \`position:fixed;top:0;right:0;width:\${PNL}px;height:100vh;display:flex;flex-direction:column;background:#060b14;z-index:9999999;font-family:Apple SD Gothic Neo,system-ui,sans-serif;font-size:13px;color:#e0ecff;border-left:1px solid #1a2d45;box-sizing:border-box\`;\r
+  p.style.cssText = \`position:fixed;top:0;right:0;width:min(\${PNL}px,100vw);max-width:100vw;height:100vh;display:flex;flex-direction:column;background:#060b14;z-index:9999999;font-family:Apple SD Gothic Neo,system-ui,sans-serif;font-size:13px;color:#e0ecff;border-left:1px solid #1a2d45;box-sizing:border-box\`;\r
   p.innerHTML = \`<style>#sadv-p *{box-sizing:border-box}#sadv-p ::-webkit-scrollbar{width:4px}#sadv-p ::-webkit-scrollbar-thumb{background:#1a2d45;border-radius:2px}#sadv-header{flex-shrink:0;background:rgba(6,11,20,.97);backdrop-filter:blur(12px);padding:10px 14px;border-bottom:1px solid #1a2d45;z-index:10}#sadv-mode-bar{display:flex;gap:4px;margin-top:8px}.sadv-mode{flex:1;background:#0d1829;border:1px solid #1a2d45;color:#3d5a78;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s}.sadv-mode.on{background:#1a2d45;border-color:#40c4ff;color:#40c4ff}#sadv-site-bar{margin-top:8px;position:relative;display:none}#sadv-site-bar.show{display:block}#sadv-combo-wrap{position:relative}#sadv-combo-btn{width:100%;background:#0d1829;border:1px solid #1a2d45;color:#e0ecff;border-radius:8px;padding:7px 32px 7px 10px;font-size:12px;cursor:pointer;text-align:left;font-family:inherit;transition:border-color .15s;display:flex;align-items:center;gap:8px}#sadv-combo-btn:hover{border-color:#40c4ff}#sadv-combo-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:#3d5a78}#sadv-combo-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}#sadv-combo-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#3d5a78;font-size:11px;pointer-events:none;transition:transform .2s}#sadv-combo-wrap.open #sadv-combo-arrow{transform:translateY(-50%) rotate(180deg)}#sadv-combo-drop{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#0d1829;border:1px solid #1a2d45;border-radius:10px;padding:4px;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,.7);max-height:260px;overflow-y:auto}#sadv-combo-wrap.open #sadv-combo-drop{display:block}.sadv-combo-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;cursor:pointer;transition:background .1s;border:1px solid transparent}.sadv-combo-item:hover{background:#132236}.sadv-combo-item.active{background:#132236;border-color:#1a2d45}.sadv-combo-item-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}.sadv-combo-item-info{flex:1;min-width:0}.sadv-combo-item-name{font-size:11px;font-weight:700;color:#e0ecff}.sadv-combo-item-url{font-size:9px;color:#3d5a78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sadv-combo-item-click{font-size:11px;font-weight:800;color:#00e676;flex-shrink:0}#sadv-combo-search{width:100%;background:#0d1829;border:1px solid #1a2d45;border-radius:7px;padding:5px 10px;font-size:11px;color:#e0ecff;font-family:inherit;outline:none;box-sizing:border-box;display:none;margin-bottom:4px;transition:border-color .15s}#sadv-combo-search:focus{border-color:#40c4ff}#sadv-combo-search::placeholder{color:#3d5a78}#sadv-tabs{display:none;gap:3px;padding:8px 14px 0;overflow-x:auto;scrollbar-width:none;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid #1a2d45}#sadv-tabs.show{display:flex}#sadv-tabs::-webkit-scrollbar{display:none}.sadv-t{background:#0d1829;border:1px solid #1a2d45;color:#3d5a78;border-radius:7px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;margin-bottom:4px}.sadv-t.on{background:#00e676;border-color:#00e676;color:#060b14}#sadv-refresh-btn{display:inline-flex;align-items:center;gap:4px;background:#0d1829;border:1px solid #1a2d45;color:#3d5a78;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;margin-left:4px}#sadv-refresh-btn:hover{border-color:#40c4ff;color:#40c4ff}#sadv-refresh-btn.spinning{animation:spin .8s linear infinite;pointer-events:none}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}#sadv-bd{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 14px 50px}.sadv-allcard{background:#0d1829;border:1px solid #1a2d45;border-radius:10px;padding:11px 13px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}.sadv-allcard:hover{border-color:#243a56}</style><div id="sadv-header"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div style="font-size:15px;font-weight:800">🔍 Search<span style="color:#00e676">Advisor</span></div><div id="sadv-account-badge" style="display:none;max-width:180px;align-items:center;padding:3px 8px;border-radius:999px;border:1px solid #284766;color:#a8d8ff;background:rgba(12,23,38,.72);font-size:10px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div></div><div id="sadv-site-label" style="font-size:10px;color:#3d5a78;margin-top:1px;display:flex;align-items:center;gap:4px">로딩 중...</div></div><div style="display:flex;gap:4px;align-items:center"><button id="sadv-refresh-btn" title="새로고침">↻</button><button id="sadv-save-btn" title="현재 화면 저장">HTML</button><button id="sadv-x" style="background:none;border:1px solid #1a2d45;color:#3d5a78;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0">✕</button></div></div><div id="sadv-mode-bar"><button class="sadv-mode on" data-m="all">🌐 전체현황</button><button class="sadv-mode" data-m="site">📊 사이트별</button></div><div id="sadv-site-bar"><div id="sadv-combo-wrap"><button id="sadv-combo-btn"><span id="sadv-combo-dot"></span><span id="sadv-combo-label">사이트 선택</span></button><span id="sadv-combo-arrow">▾</span><div id="sadv-combo-drop"></div></div></div></div><div id="sadv-tabs"></div><div id="sadv-bd"><div style="padding:50px 20px;text-align:center;color:#3d5a78">⏳ 로딩 중...</div></div>\`;\r
   document.body.appendChild(p);\r
   const siteUiStyle = document.createElement("style");\r
@@ -806,7 +813,7 @@ Error generating stack: `+l.message+`
     const COLORS = \${JSON.stringify(COLORS)};\r
     const DOW = \${JSON.stringify(DOW)};\r
     const PNL = \${JSON.stringify(PNL)};\r
-    const W2 = PNL - 32;\r
+    const CHART_W = PNL - 32;\r
     const TABS = \${JSON.stringify(TABS)};\r
     let TIP = null;\r
     const fmt = (v) => Number(v).toLocaleString();\r
