@@ -1358,32 +1358,19 @@ function barchart(vals, labels, H, col, unit) {\r
   const inflightDetail = {};\r
   const inflightDiagnosisMeta = {};\r
   function hasDiagnosisMetaSnapshot(data) {\r
+    if (!data) return false;\r
+    if (data.diagnosisMeta && data.diagnosisMeta.code === 0 && data.diagnosisMetaRange) {\r
+      return true;\r
+    }\r
+    if (typeof data.diagnosisMetaFetchState !== "string") return false;\r
+    if (data.diagnosisMetaFetchState === "success") return true;\r
+    if (data.diagnosisMetaFetchState !== "failure") return false;\r
     return !!(\r
-      data &&\r
-      "diagnosisMeta" in data &&\r
-      "diagnosisMetaStatus" in data &&\r
-      "diagnosisMetaRange" in data\r
+      typeof data.diagnosisMetaFetchedAt === "number" &&\r
+      Date.now() - data.diagnosisMetaFetchedAt < 15 * 60 * 1000\r
     );\r
   }\r
-  function getDiagnosisMetaRange(baseData) {\r
-    const exposeItem =\r
-      (baseData && baseData.expose && baseData.expose.items && baseData.expose.items[0]) ||\r
-      {};\r
-    const exposeLogs = [...(exposeItem.logs || [])].sort((a, b) =>\r
-      (a.date || "").localeCompare(b.date || ""),\r
-    );\r
-    const fmtRangeDate = function (value) {\r
-      return String(value || "").replace(/[^\\d]/g, "").slice(0, 8);\r
-    };\r
-    const parseYmd = function (value) {\r
-      const normalized = fmtRangeDate(value);\r
-      if (normalized.length !== 8) return null;\r
-      const year = Number(normalized.slice(0, 4));\r
-      const month = Number(normalized.slice(4, 6));\r
-      const day = Number(normalized.slice(6, 8));\r
-      const time = Date.UTC(year, month - 1, day);\r
-      return Number.isFinite(time) ? new Date(time) : null;\r
-    };\r
+  function getDiagnosisMetaRange() {\r
     const formatYmd = function (date) {\r
       if (!date) return "";\r
       const year = date.getUTCFullYear();\r
@@ -1401,19 +1388,8 @@ function barchart(vals, labels, H, col, unit) {\r
         todayKstLocal.getDate(),\r
       ),\r
     );\r
-    const latestExposeDate =\r
-      exposeLogs.length && exposeLogs[exposeLogs.length - 1].date\r
-        ? parseYmd(exposeLogs[exposeLogs.length - 1].date)\r
-        : null;\r
-    const earliestExposeDate =\r
-      exposeLogs.length && exposeLogs[0].date ? parseYmd(exposeLogs[0].date) : null;\r
-    const effectiveEndDate =\r
-      latestExposeDate && latestExposeDate < todayKst ? latestExposeDate : todayKst;\r
-    const windowStartDate = new Date(effectiveEndDate.getTime() - 40 * 864e5);\r
-    const effectiveStartDate =\r
-      earliestExposeDate && earliestExposeDate > windowStartDate\r
-        ? earliestExposeDate\r
-        : windowStartDate;\r
+    const effectiveEndDate = todayKst;\r
+    const effectiveStartDate = new Date(effectiveEndDate.getTime() - 40 * 864e5);\r
     return {\r
       startDate: formatYmd(effectiveStartDate),\r
       endDate: formatYmd(effectiveEndDate),\r
@@ -1425,11 +1401,13 @@ function barchart(vals, labels, H, col, unit) {\r
     if (inflightDiagnosisMeta[site]) return inflightDiagnosisMeta[site];\r
     const enc = encodeURIComponent(site),\r
       base = "https://searchadvisor.naver.com/api-console/report";\r
-    const range = getDiagnosisMetaRange(baseData);\r
+    const range = getDiagnosisMetaRange();\r
     inflightDiagnosisMeta[site] = (async function () {\r
       try {\r
         let response = null;\r
         let diagnosisMeta = null;\r
+        let diagnosisMetaFetchState = "failure";\r
+        const diagnosisMetaFetchedAt = Date.now();\r
         try {\r
           response = await fetch(\r
             base +\r
@@ -1444,12 +1422,17 @@ function barchart(vals, labels, H, col, unit) {\r
             { credentials: "include", headers: { accept: "application/json" } },\r
           );\r
           diagnosisMeta = response.ok ? await response.json() : null;\r
+          if (response.ok && diagnosisMeta && diagnosisMeta.code === 0) {\r
+            diagnosisMetaFetchState = "success";\r
+          }\r
         } catch (e) {}\r
         const result = {\r
           ...baseData,\r
           diagnosisMeta,\r
           diagnosisMetaStatus: response ? response.status : null,\r
           diagnosisMetaRange: range,\r
+          diagnosisMetaFetchState,\r
+          diagnosisMetaFetchedAt,\r
           detailLoaded: !!baseData.detailLoaded,\r
         };\r
         memCache[site] = result;\r
@@ -1676,6 +1659,7 @@ function barchart(vals, labels, H, col, unit) {\r
     switchMode(m.dataset.m);\r
   });\r
   function switchMode(mode) {\r
+    if (mode === curMode) return;\r
     curMode = mode;\r
     modeBar\r
       .querySelectorAll(".sadv-mode")\r
@@ -2606,28 +2590,7 @@ function barchart(vals, labels, H, col, unit) {\r
             ? normalizeSiteData(res.value)
             : { expose: null, crawl: null, backlink: null, detailLoaded: false };`,`          res.status === "fulfilled"
             ? normalizeSiteData(res.value)
-            : {
-                expose: null,
-                crawl: null,
-                backlink: null,
-                diagnosisMeta: null,
-                diagnosisMetaStatus: null,
-                diagnosisMetaRange: null,
-                detailLoaded: false,
-              };`),s=Ho(s,`  function normalizeSiteData(data) {
-    if (!data) return null;
-    const expose = data.expose || null,
-      detailLoaded =
-        typeof data.detailLoaded === "boolean"
-          ? data.detailLoaded
-          : "crawl" in data || "backlink" in data;
-    return {
-      expose,
-      crawl: detailLoaded ? (data.crawl ?? null) : null,
-      backlink: detailLoaded ? (data.backlink ?? null) : null,
-      detailLoaded,
-    };
-  }`,`  function normalizeSiteData(data) {
+            : { expose: null, crawl: null, backlink: null, detailLoaded: false };`),s=Ho(s,`  function normalizeSiteData(data) {
     if (!data) return null;
     const expose = data.expose || null,
       detailLoaded =
@@ -2637,16 +2600,35 @@ function barchart(vals, labels, H, col, unit) {\r
     const hasDiagnosisMeta =
       "diagnosisMeta" in data ||
       "diagnosisMetaStatus" in data ||
-      "diagnosisMetaRange" in data;
-    return {
+      "diagnosisMetaRange" in data ||
+      "diagnosisMetaFetchState" in data ||
+      "diagnosisMetaFetchedAt" in data;
+    const result = {
       expose,
       crawl: detailLoaded ? (data.crawl ?? null) : null,
       backlink: detailLoaded ? (data.backlink ?? null) : null,
-      diagnosisMeta: hasDiagnosisMeta ? (data.diagnosisMeta ?? null) : null,
-      diagnosisMetaStatus: hasDiagnosisMeta ? (data.diagnosisMetaStatus ?? null) : null,
-      diagnosisMetaRange: hasDiagnosisMeta ? (data.diagnosisMetaRange ?? null) : null,
       detailLoaded,
     };
+    if (hasDiagnosisMeta) {
+      result.diagnosisMeta = data.diagnosisMeta ?? null;
+      result.diagnosisMetaStatus =
+        typeof data.diagnosisMetaStatus !== "undefined"
+          ? data.diagnosisMetaStatus
+          : null;
+      result.diagnosisMetaRange =
+        typeof data.diagnosisMetaRange !== "undefined"
+          ? data.diagnosisMetaRange
+          : null;
+      result.diagnosisMetaFetchState =
+        typeof data.diagnosisMetaFetchState === "string"
+          ? data.diagnosisMetaFetchState
+          : null;
+      result.diagnosisMetaFetchedAt =
+        typeof data.diagnosisMetaFetchedAt === "number"
+          ? data.diagnosisMetaFetchedAt
+          : null;
+    }
+    return result;
   }`),s=Ho(s,`        const result = {
           expose,
           crawl: null,
@@ -2656,9 +2638,6 @@ function barchart(vals, labels, H, col, unit) {\r
           expose,
           crawl: null,
           backlink: null,
-          diagnosisMeta: null,
-          diagnosisMetaStatus: null,
-          diagnosisMetaRange: null,
           detailLoaded: false,
         };`),s=Ho(s,`  async function fetchSiteData(site) {
     const baseData = await fetchExposeData(site);
@@ -2764,13 +2743,23 @@ function barchart(vals, labels, H, col, unit) {\r
           ...baseData,
           crawl,
           backlink,
-          diagnosisMeta: "diagnosisMeta" in baseData ? baseData.diagnosisMeta : null,
-          diagnosisMetaStatus:
-            "diagnosisMetaStatus" in baseData ? baseData.diagnosisMetaStatus : null,
-          diagnosisMetaRange:
-            "diagnosisMetaRange" in baseData ? baseData.diagnosisMetaRange : null,
           detailLoaded: true,
         };
+        if ("diagnosisMeta" in baseData) {
+          result.diagnosisMeta = baseData.diagnosisMeta ?? null;
+        }
+        if ("diagnosisMetaStatus" in baseData) {
+          result.diagnosisMetaStatus = baseData.diagnosisMetaStatus ?? null;
+        }
+        if ("diagnosisMetaRange" in baseData) {
+          result.diagnosisMetaRange = baseData.diagnosisMetaRange ?? null;
+        }
+        if ("diagnosisMetaFetchState" in baseData) {
+          result.diagnosisMetaFetchState = baseData.diagnosisMetaFetchState ?? null;
+        }
+        if ("diagnosisMetaFetchedAt" in baseData) {
+          result.diagnosisMetaFetchedAt = baseData.diagnosisMetaFetchedAt ?? null;
+        }
         memCache[site] = result;
         setCachedData(site, result);
         return result;
@@ -3498,7 +3487,7 @@ function barchart(vals, labels, H, col, unit) {\r
     for (let i = 0; i < sitesToLoad.length; i += ALL_SITES_BATCH) {
       const batchSites = sitesToLoad.slice(i, i + ALL_SITES_BATCH);
       setProgress(
-        "기본 리포트 " +
+        "\uae30\ubcf8 \ub9ac\ud3ec\ud2b8 " +
           Math.min(i + batchSites.length, sitesToLoad.length) +
           " / " +
           sitesToLoad.length,
@@ -3513,17 +3502,18 @@ function barchart(vals, labels, H, col, unit) {\r
         }
       });
     }
-    missingDiagnosisMetaCount = sitesToLoad.filter(function (site) {
+    const metaSitesToLoad = sitesToLoad.filter(function (site) {
       return !hasDiagnosisMetaSnapshot(siteDataBySite[site] || null);
-    }).length;
+    });
+    missingDiagnosisMetaCount = metaSitesToLoad.length;
     const metaBatchSize = 2;
     let metaLoaded = 0;
-    for (let i = 0; i < sitesToLoad.length; i += metaBatchSize) {
-      const batchSites = sitesToLoad.slice(i, i + metaBatchSize);
+    for (let i = 0; i < metaSitesToLoad.length; i += metaBatchSize) {
+      const batchSites = metaSitesToLoad.slice(i, i + metaBatchSize);
       setProgress(
-        "색인 진단 " + metaLoaded + " / " + sitesToLoad.length,
-        0.55 + (metaLoaded / Math.max(1, sitesToLoad.length)) * 0.38,
-        "메타 진단은 2개씩 천천히 요청해 차단 위험을 낮춥니다.",
+        "\uc0c9\uc778 \uc9c4\ub2e8 " + metaLoaded + " / " + metaSitesToLoad.length,
+        0.55 + (metaLoaded / Math.max(1, metaSitesToLoad.length)) * 0.38,
+        "\uba54\ud0c0 \uc9c4\ub2e8\uc740 2\uac1c\uc529 \ucc9c\ucc9c\ud788 \uc694\uccad\ud574 \ucc28\ub2e8 \uc704\ud5d8\uc744 \ub0ae\ucda5\ub2c8\ub2e4.",
       );
       const batchResults = await Promise.allSettled(
         batchSites.map((site) => fetchDiagnosisMeta(site, siteDataBySite[site] || null)),
@@ -3536,11 +3526,11 @@ function barchart(vals, labels, H, col, unit) {\r
         }
       });
       setProgress(
-        "색인 진단 " + metaLoaded + " / " + sitesToLoad.length,
-        0.55 + (metaLoaded / Math.max(1, sitesToLoad.length)) * 0.38,
-        "가져온 색인 진단 캐시는 사이트별 탭에서도 그대로 재사용합니다.",
+        "\uc0c9\uc778 \uc9c4\ub2e8 " + metaLoaded + " / " + metaSitesToLoad.length,
+        0.55 + (metaLoaded / Math.max(1, metaSitesToLoad.length)) * 0.38,
+        "\uac00\uc838\uc628 \uc0c9\uc778 \uc9c4\ub2e8 \uce90\uc2dc\ub294 \uc0ac\uc774\ud2b8\ubcc4 \ud0ed\uc5d0\uc11c\ub3c4 \uadf8\ub300\ub85c \uc7ac\uc0ac\uc6a9\ud569\ub2c8\ub2e4.",
       );
-      if (missingDiagnosisMetaCount !== 0 && i + metaBatchSize < sitesToLoad.length) {
+      if (i + metaBatchSize < metaSitesToLoad.length) {
         await new Promise((resolve) => setTimeout(resolve, 140));
       }
     }
@@ -3609,7 +3599,6 @@ function barchart(vals, labels, H, col, unit) {\r
           expose: null,
           crawl: null,
           backlink: null,
-          diagnosisMeta: null,
           detailLoaded: false,
         }
       );`),s=Ho(s,`            EXPORT_PAYLOAD.dataBySite[site] || {
@@ -3621,7 +3610,6 @@ function barchart(vals, labels, H, col, unit) {\r
               expose: null,
               crawl: null,
               backlink: null,
-              diagnosisMeta: null,
               detailLoaded: false,
             },`),s=Ho(s,`  renderAllSites();
 })();`,`  await renderAllSites();
