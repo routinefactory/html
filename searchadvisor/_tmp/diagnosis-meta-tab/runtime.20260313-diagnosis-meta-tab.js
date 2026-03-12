@@ -2399,6 +2399,8 @@ Error generating stack: `+l.message+`
       const day = String(date.getUTCDate()).padStart(2, "0");
       return String(year) + month + day;
     };
+    // diagnosis/meta does not follow the wider expose/crawl window.
+    // Match the live diagnosis page behavior: today in KST plus the trailing 41-day window.
     const todayKstLocal = new Date(
       new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }),
     );
