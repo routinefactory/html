@@ -2813,6 +2813,14 @@ Error generating stack: `+l.message+`
         const formatSigned = function (value) {
           return (value >= 0 ? "+" : "") + fmt(value);
         };
+        const formatStartDelta = function (series) {
+          return (
+            fmt(series.current) +
+            ' <span style="font-size:11px;color:#7a9ab8">/ \uC2DC\uC791 \uB300\uBE44 ' +
+            formatSigned(series.delta) +
+            "</span>"
+          );
+        };
         const buildCodeCard = function (title, rows, accent, emptyText) {
           const card = document.createElement("div");
           card.style.cssText =
@@ -2887,10 +2895,7 @@ Error generating stack: `+l.message+`
         wrap.appendChild(
           chartCard(
             "\uC0C9\uC778 \uCD94\uC774",
-            fmt(diagnosisIndexedSeries.current) +
-              " (" +
-              formatSigned(diagnosisIndexedSeries.delta) +
-              ")",
+            formatStartDelta(diagnosisIndexedSeries),
             diagnosisIndexedSeries.color,
             sparkline(
               diagnosisIndexedSeries.values,
@@ -2905,10 +2910,7 @@ Error generating stack: `+l.message+`
         wrap.appendChild(
           chartCard(
             "\uC218\uC9D1\uC81C\uD55C \uCD94\uC774",
-            fmt(diagnosisRestrictedSeries.current) +
-              " (" +
-              formatSigned(diagnosisRestrictedSeries.delta) +
-              ")",
+            formatStartDelta(diagnosisRestrictedSeries),
             diagnosisRestrictedSeries.color,
             sparkline(
               diagnosisRestrictedSeries.values,
@@ -2923,10 +2925,7 @@ Error generating stack: `+l.message+`
         wrap.appendChild(
           chartCard(
             "SEO \uBB38\uC81C \uCD94\uC774",
-            fmt(diagnosisSeoSeries.current) +
-              " (" +
-              formatSigned(diagnosisSeoSeries.delta) +
-              ")",
+            formatStartDelta(diagnosisSeoSeries),
             diagnosisSeoSeries.color,
             sparkline(
               diagnosisSeoSeries.values,
@@ -2941,10 +2940,7 @@ Error generating stack: `+l.message+`
         wrap.appendChild(
           chartCard(
             "\uC0C9\uC778 \uC81C\uC678 \uCD94\uC774",
-            fmt(diagnosisExcludedSeries.current) +
-              " (" +
-              formatSigned(diagnosisExcludedSeries.delta) +
-              ")",
+            formatStartDelta(diagnosisExcludedSeries),
             diagnosisExcludedSeries.color,
             sparkline(
               diagnosisExcludedSeries.values,
@@ -2970,7 +2966,7 @@ Error generating stack: `+l.message+`
             fmt(series.current) +
             '\uAC74</b></div>' +
             hbar(series.current, diagnosisTotalLatest || 1, series.color) +
-            '<div style="font-size:10px;color:#3d5a78;margin-top:5px">\uAE30\uAC04 \uBCC0\uD654 <b style="color:' +
+            '<div style="font-size:10px;color:#3d5a78;margin-top:5px">\uC2DC\uC791 \uB300\uBE44 <b style="color:' +
             (series.delta >= 0 ? C.green : C.red) +
             '">' +
             formatSigned(series.delta) +
