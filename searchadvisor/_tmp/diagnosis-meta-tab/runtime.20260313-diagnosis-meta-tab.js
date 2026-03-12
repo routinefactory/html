@@ -2795,15 +2795,15 @@ function barchart(vals, labels, H, col, unit) {\r
     const diagnosisDates = diagnosisLogs.map(function (row) {
       return (row.date || "").slice(5);
     });
-    const diagnosisIndexedByDate = diagnosisLogs.reduce(function (acc, row) {
-      const key = String(row.date || "").replace(/\D/g, "");
-      acc[key] = (row.stateCount && row.stateCount["1"]) || 0;
-      return acc;
-    }, {});
-    const diagnosisIndexedOverviewValues = logs.map(function (row) {
-      const key = String(row.date || "").replace(/\D/g, "");
-      return diagnosisIndexedByDate[key] || 0;
+    const diagnosisIndexedTailValues = diagnosisLogs.map(function (row) {
+      return (row.stateCount && row.stateCount["1"]) || 0;
     });
+    const diagnosisIndexedOverviewValues =
+      logs.length > diagnosisIndexedTailValues.length
+        ? Array(logs.length - diagnosisIndexedTailValues.length)
+            .fill(0)
+            .concat(diagnosisIndexedTailValues)
+        : diagnosisIndexedTailValues.slice(-logs.length);
     const diagnosisStates = ["1", "2", "3", "4"];
     const diagnosisStateMeta = {
       "1": { label: "\uC0C9\uC778", color: C.green },
