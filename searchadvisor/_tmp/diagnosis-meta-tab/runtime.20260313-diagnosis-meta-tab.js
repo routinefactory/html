@@ -239,6 +239,14 @@ Error generating stack: `+l.message+`
       mx = Math.max(...vals),\r
       mn = Math.min(...vals),\r
       rng = mx - mn || 1;\r
+    const showYAxisGuides = H >= 70;\r
+    const formatAxisValue = function (value) {\r
+      const rounded =\r
+        Math.abs(value - Math.round(value)) < 0.05\r
+          ? Math.round(value)\r
+          : Math.round(value * 10) / 10;\r
+      return fmt(rounded) + unit;\r
+    };\r
     const uid = "g" + Math.random().toString(36).slice(2, 6),\r
       cid = "c" + uid,\r
       wid = "w" + uid;\r
@@ -259,13 +267,102 @@ Error generating stack: `+l.message+`
       "," +\r
       H +\r
       " Z";\r
+    const guideMarkup = showYAxisGuides\r
+      ? [mx, mn + (mx - mn) / 2, mn]\r
+          .reduce(function (acc, value) {\r
+            const y = +(\r
+              pT +\r
+              (1 - (value - mn) / rng) * (H - pT - pB)\r
+            ).toFixed(1);\r
+            if (\r
+              !acc.some(function (entry) {\r
+                return Math.abs(entry.y - y) < 8;\r
+              })\r
+            ) {\r
+              acc.push({ value, y });\r
+            }\r
+            return acc;\r
+          }, [])\r
+          .map(function (entry) {\r
+            return (\r
+              '<line x1="' +\r
+              pL +\r
+              '" y1="' +\r
+              entry.y +\r
+              '" x2="' +\r
+              (W2 - pR) +\r
+              '" y2="' +\r
+              entry.y +\r
+              '" stroke="#2a415d" stroke-width="1" stroke-dasharray="4,4" opacity="0.65"/>' +\r
+              '<text x="' +\r
+              +(W2 / 2).toFixed(1) +\r
+              '" y="' +\r
+              entry.y +\r
+              '" fill="#5f7e9e" font-size="9" text-anchor="middle" dominant-baseline="middle" opacity="0.88" style="paint-order:stroke;stroke:#08111d;stroke-width:3;stroke-linejoin:round">' +\r
+              formatAxisValue(entry.value) +\r
+              "</text>"\r
+            );\r
+          })\r
+          .join("")\r
+      : "";\r
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");\r
     svg.setAttribute("width", "100%");\r
     svg.setAttribute("height", H);\r
     svg.setAttribute("viewBox", "0 0 " + W2 + " " + H);\r
     svg.setAttribute("preserveAspectRatio", "none");\r
     svg.style.cssText = "display:block;width:100%;height:auto;cursor:crosshair";\r
-    svg.innerHTML = \`<defs><linearGradient id="\${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="\${col}" stop-opacity="0.22"/><stop offset="100%" stop-color="\${col}" stop-opacity="0.01"/></linearGradient></defs><path d="\${area}" fill="url(#\${uid})"/><path d="\${path}" fill="none" stroke="\${col}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><line id="\${wid}" x1="0" y1="0" x2="0" y2="\${H}" stroke="#3d5a78" stroke-width="1" stroke-dasharray="3,2" opacity="0"/><circle id="\${cid}" cx="0" cy="0" r="3.5" fill="\${col}" stroke="#060b14" stroke-width="1.5" opacity="0"/>\`;\r
+    svg.innerHTML =
+
+      '<defs><linearGradient id="' +
+
+      uid +
+
+      '" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' +
+
+      col +
+
+      '" stop-opacity="0.22"/><stop offset="100%" stop-color="' +
+
+      col +
+
+      '" stop-opacity="0.01"/></linearGradient></defs>' +
+
+      guideMarkup +
+
+      '<path d="' +
+
+      area +
+
+      '" fill="url(#' +
+
+      uid +
+
+      ')"/><path d="' +
+
+      path +
+
+      '" fill="none" stroke="' +
+
+      col +
+
+      '" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><line id="' +
+
+      wid +
+
+      '" x1="0" y1="0" x2="0" y2="' +
+
+      H +
+
+      '" stroke="#3d5a78" stroke-width="1" stroke-dasharray="3,2" opacity="0"/><circle id="' +
+
+      cid +
+
+      '" cx="0" cy="0" r="3.5" fill="' +
+
+      col +
+
+      '" stroke="#060b14" stroke-width="1.5" opacity="0"/>';
+
     svg.addEventListener("mousemove", function (e) {\r
       const rect = svg.getBoundingClientRect(),\r
         rx = e.clientX - rect.left,\r
@@ -287,7 +384,14 @@ Error generating stack: `+l.message+`
       c.setAttribute("opacity", "1");\r
       showTip(\r
         e,\r
-        \`<span style="color:#7a9ab8;font-size:10px">\${(labels && labels[idx]) || ""}</span><br><b style="color:\${col}">\${fmt(vals[idx])}\${unit}</b>\`,\r
+        "<span style="color:#7a9ab8;font-size:10px">" +\r
+          ((labels && labels[idx]) || "") +\r
+          "</span><br><b style="color:" +\r
+          col +\r
+          "">" +\r
+          fmt(vals[idx]) +\r
+          unit +\r
+          "</b>",\r
       );\r
     });\r
     svg.addEventListener("mouseleave", function () {\r
@@ -298,7 +402,7 @@ Error generating stack: `+l.message+`
     svg.addEventListener("mousemove", moveTip);\r
     return svg;\r
   }\r
-  function barchart(vals, labels, H, col, unit) {\r
+function barchart(vals, labels, H, col, unit) {\r
     unit = unit || "";\r
     if (!vals || !vals.length) return document.createElement("div");\r
     const W2 = CHART_W;\r
