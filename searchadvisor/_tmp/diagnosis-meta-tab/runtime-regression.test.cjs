@@ -94,3 +94,17 @@ test("all-sites cards use per-card colors and remove noisy trend badges", () => 
     /const indexMini = sparkline\([\s\S]*?r\.diagnosisIndexedDates,\r?\n\s*42,\r?\n\s*col,/,
   );
 });
+
+test("loader tolerates legacy card template drift and patches cards via DOM cleanup", () => {
+  assert.match(
+    runtime,
+    /if\(s\.startsWith\('      card\.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"'\)\)return a;/,
+  );
+  assert.match(runtime, /const headerRow = card\.firstElementChild;/);
+  assert.match(runtime, /if \(badgeEl\) badgeEl\.remove\(\);/);
+  assert.match(runtime, /if \(headerRight\) headerRight\.remove\(\);/);
+  assert.match(
+    runtime,
+    /metricGrid\.style\.gridTemplateColumns = "repeat\(3,minmax\(0,1fr\)\)";/,
+  );
+});

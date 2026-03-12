@@ -2459,7 +2459,7 @@ function barchart(vals, labels, H, col, unit) {\r
 })();\r
 `,lS="sadv_data_v2_",R0=720*60*1e3;function aS(a){return lS+btoa(a).replace(/=/g,"")}function A0(a){try{const s=localStorage.getItem(aS(a));if(!s)return null;const f=JSON.parse(s);return typeof f?.ts=="number"?{ts:f.ts}:null}catch{return null}}function rS(a){const s=Date.now();if(a.curMode==="site"&&a.curSite){const v=A0(a.curSite);return v?{label:a.curSite.replace(/^https?:\/\//,""),updatedAt:v.ts,remainingMs:Math.max(0,v.ts+R0-s),sourceCount:1,measuredAt:s}:null}const f=a.allSites.map(v=>({site:v,record:A0(v)})).filter(v=>!!v.record);return f.length?{label:`전체 ${f.length}개`,updatedAt:Math.max(...f.map(v=>v.record.ts)),remainingMs:Math.max(0,Math.min(...f.map(v=>v.record.ts+R0))-s),sourceCount:f.length,measuredAt:s}:null}function _0(a){return{...a,runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"dev",runtimeLoadedAt:window.__SEARCHADVISOR_RUNTIME_LOADED_AT__||null,cacheMeta:rS(a)}}/* Runtime surgery rule: keep Ho() patch anchors ASCII-only and encode Korean UI text with \\uXXXX escapes. */function Ho(a,s,f){if(a.includes(s))return a.replace(s,f);const v=[s.replace(/\r/g,""),s.replace(/\r/g,`
 `),s.replace(/\r\n/g,`
-`),s.replace(/\n/g,"\r\n")];for(const h of v)if(h&&a.includes(h))return a.replace(h,f);throw new Error(`Legacy patch point not found: ${s.slice(0,48)}`)}function iS(a){let s=a.replace(/^javascript:\s*/,"").replace(/\r\n/g,`
+`),s.replace(/\n/g,"\r\n")];for(const h of v)if(h&&a.includes(h))return a.replace(h,f);if(s.startsWith('      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"'))return a;throw new Error(`Legacy patch point not found: ${s.slice(0,48)}`)}function iS(a){let s=a.replace(/^javascript:\s*/,"").replace(/\r\n/g,`
 `);return s=Ho(s,`  let curMode = "all",
     curSite = null,
     curTab = "overview";
@@ -3587,7 +3587,28 @@ function barchart(vals, labels, H, col, unit) {\r
           metaCode +
           "</div>";
       }
-      card.appendChild(indexBlock);`),s=Ho(s,`      const col = SITE_COLORS_MAP[r.site] || COLORS[i % COLORS.length];`,`      const allCardColors = [C.green, C.blue, C.amber, C.teal, C.purple];
+      card.appendChild(indexBlock);`),
+  s=Ho(s,`      wrap.appendChild(card);
+    });`,`      const headerRow = card.firstElementChild;
+      const metricGrid = headerRow ? headerRow.nextElementSibling : null;
+      const headerLeft = headerRow ? headerRow.firstElementChild : null;
+      const headerRight =
+        headerRow && headerRow.lastElementChild !== headerLeft
+          ? headerRow.lastElementChild
+          : null;
+      const dotEl = headerLeft ? headerLeft.firstElementChild : null;
+      const titleEl = dotEl ? dotEl.nextElementSibling : null;
+      const badgeEl = titleEl ? titleEl.nextElementSibling : null;
+      if (dotEl) dotEl.style.boxShadow = "0 0 0 4px " + col + "12";
+      if (titleEl) titleEl.style.maxWidth = "240px";
+      if (badgeEl) badgeEl.remove();
+      if (headerRight) headerRight.remove();
+      if (metricGrid) {
+        metricGrid.style.gridTemplateColumns = "repeat(3,minmax(0,1fr))";
+        if (metricGrid.lastElementChild) metricGrid.lastElementChild.remove();
+      }
+      wrap.appendChild(card);
+    });`),s=Ho(s,`      const col = SITE_COLORS_MAP[r.site] || COLORS[i % COLORS.length];`,`      const allCardColors = [C.green, C.blue, C.amber, C.teal, C.purple];
       const col = allCardColors[i % allCardColors.length];`),s=Ho(s,`      card.innerHTML = \`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="width:8px;height:8px;border-radius:50%;background:\${col};flex-shrink:0"></div><span style="font-size:12px;font-weight:700;line-height:1.3;color:#e0ecff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">\${shortName}</span>\${prevBadge}</div><span style="font-size:11px;line-height:1.2;color:\${trendCol};flex-shrink:0">\${trendIcon}</span></div><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px"><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.green}">\${fmt(r.totalC)}</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">?대┃</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.blue}">\${(r.totalE / 10000).toFixed(1)}留?/div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">?몄텧</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.amber}">\${r.avgCtr}%</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">CTR</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${trendCol}">\${fmt(Math.round(r.trend * 7))}</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">二쇨컙異붿꽭</div></div></div>\`;`,`      card.innerHTML = \`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="width:8px;height:8px;border-radius:50%;background:\${col};flex-shrink:0;box-shadow:0 0 0 4px \${col}12"></div><span style="font-size:12px;font-weight:700;line-height:1.3;color:#e0ecff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px">\${shortName}</span></div></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:8px"><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.green}">\${fmt(r.totalC)}</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">\uD074\uB9AD</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.blue}">\${(r.totalE / 10000).toFixed(1)}\uB9CC</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">\uB178\uCD9C</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.amber}">\${r.avgCtr}%</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">CTR</div></div></div>\`;`),s=Ho(s,`        mini.style.cssText += "opacity:.7";`,`        mini.style.cssText += "opacity:.82";`),s=Ho(s,`    bdEl.innerHTML = "";
     bdEl.appendChild(wrap);
     bdEl.scrollTop = 0;
