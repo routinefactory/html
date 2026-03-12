@@ -29,6 +29,31 @@ The `_tmp` path is intentionally isolated from production. Use it first for runt
 5. After editing a runtime file, run at least `node --check` on that file.
 6. Do not change the production `latest.json` casually. That file changes what existing users load.
 
+## Runtime Patch Safety Rules
+
+The versioned runtime bundles in this folder are not normal source files. They contain embedded legacy code strings and then patch those strings again with `Ho(...)`.
+
+That means small text differences can break runtime patching:
+
+- newline style differences such as `\r`, `\n`, or `\r\n`
+- Windows codepage corruption when raw Korean text is inserted from a terminal edit path
+- fragile patch anchors that depend on long UI strings instead of stable structural code
+
+When editing a runtime bundle directly:
+
+1. Use ASCII-only patch anchors whenever possible.
+2. Do not use raw Korean text inside patch target strings.
+3. For UI labels inside patched strings, prefer Unicode escapes such as `\uC0C9\uC778`.
+4. Anchor patches to short structural lines like `card.appendChild(mini);`, not to long localized HTML.
+5. If a patch needs Korean text, keep the anchor ASCII-only and put the Korean only in the replacement body.
+6. If a `Legacy patch point not found` popup appears, compare the exact target string before changing behavior logic.
+
+These rules exist specifically to prevent repeat failures like:
+
+- raw Korean being rewritten to `??`
+- a patch target matching on disk but failing in the browser
+- cache confusion caused by runtime edits without a version bump
+
 ## Diagnosis Meta Tab Rules
 
 `report/diagnosis/meta` does not follow the same assumptions as the wider `expose`, `crawl`, or `backlink` flows.
@@ -81,10 +106,11 @@ Recommended behavior:
 1. Implement in `_tmp`.
 2. Bump the `_tmp` version string.
 3. Run `node --check`.
-4. Reload the page and rerun the test bookmarklet.
-5. Verify the visible version chip.
-6. Compare the request with live network traffic if behavior is still off.
-7. Only then consider promoting the change to production.
+4. Review every new `Ho(...)` anchor for ASCII-only safety.
+5. Reload the page and rerun the test bookmarklet.
+6. Verify the visible version chip.
+7. Compare the request with live network traffic if behavior is still off.
+8. Only then consider promoting the change to production.
 
 ## Related Files
 

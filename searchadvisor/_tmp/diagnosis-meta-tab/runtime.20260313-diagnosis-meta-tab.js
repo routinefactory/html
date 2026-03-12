@@ -2459,7 +2459,7 @@ function barchart(vals, labels, H, col, unit) {\r
   setAllSitesLabel();\r
   renderAllSites();\r
 })();\r
-`,lS="sadv_data_v2_",R0=720*60*1e3;function aS(a){return lS+btoa(a).replace(/=/g,"")}function A0(a){try{const s=localStorage.getItem(aS(a));if(!s)return null;const f=JSON.parse(s);return typeof f?.ts=="number"?{ts:f.ts}:null}catch{return null}}function rS(a){const s=Date.now();if(a.curMode==="site"&&a.curSite){const v=A0(a.curSite);return v?{label:a.curSite.replace(/^https?:\/\//,""),updatedAt:v.ts,remainingMs:Math.max(0,v.ts+R0-s),sourceCount:1,measuredAt:s}:null}const f=a.allSites.map(v=>({site:v,record:A0(v)})).filter(v=>!!v.record);return f.length?{label:`전체 ${f.length}개`,updatedAt:Math.max(...f.map(v=>v.record.ts)),remainingMs:Math.max(0,Math.min(...f.map(v=>v.record.ts+R0))-s),sourceCount:f.length,measuredAt:s}:null}function _0(a){return{...a,runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"dev",runtimeLoadedAt:window.__SEARCHADVISOR_RUNTIME_LOADED_AT__||null,cacheMeta:rS(a)}}function Ho(a,s,f){if(a.includes(s))return a.replace(s,f);const v=[s.replace(/\r/g,""),s.replace(/\r/g,`
+`,lS="sadv_data_v2_",R0=720*60*1e3;function aS(a){return lS+btoa(a).replace(/=/g,"")}function A0(a){try{const s=localStorage.getItem(aS(a));if(!s)return null;const f=JSON.parse(s);return typeof f?.ts=="number"?{ts:f.ts}:null}catch{return null}}function rS(a){const s=Date.now();if(a.curMode==="site"&&a.curSite){const v=A0(a.curSite);return v?{label:a.curSite.replace(/^https?:\/\//,""),updatedAt:v.ts,remainingMs:Math.max(0,v.ts+R0-s),sourceCount:1,measuredAt:s}:null}const f=a.allSites.map(v=>({site:v,record:A0(v)})).filter(v=>!!v.record);return f.length?{label:`전체 ${f.length}개`,updatedAt:Math.max(...f.map(v=>v.record.ts)),remainingMs:Math.max(0,Math.min(...f.map(v=>v.record.ts+R0))-s),sourceCount:f.length,measuredAt:s}:null}function _0(a){return{...a,runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"dev",runtimeLoadedAt:window.__SEARCHADVISOR_RUNTIME_LOADED_AT__||null,cacheMeta:rS(a)}}/* Runtime surgery rule: keep Ho() patch anchors ASCII-only and encode Korean UI text with \\uXXXX escapes. */function Ho(a,s,f){if(a.includes(s))return a.replace(s,f);const v=[s.replace(/\r/g,""),s.replace(/\r/g,`
 `),s.replace(/\r\n/g,`
 `),s.replace(/\n/g,"\r\n")];for(const h of v)if(h&&a.includes(h))return a.replace(h,f);throw new Error(`Legacy patch point not found: ${s.slice(0,48)}`)}function iS(a){let s=a.replace(/^javascript:\s*/,"").replace(/\r\n/g,`
 `);return s=Ho(s,`  let curMode = "all",
@@ -3545,7 +3545,7 @@ function barchart(vals, labels, H, col, unit) {\r
         : exposeResults[i] && exposeResults[i].status === "fulfilled"
           ? buildSiteSummaryRow(site, exposeResults[i].value)
           : buildSiteSummaryRow(site, null),
-    );`),s=Ho(s,`        card.appendChild(mini);
+    );`)/* Patch safety: anchor this block on ASCII-only structure, not localized text. */,s=Ho(s,`        card.appendChild(mini);
       }`,`        card.appendChild(mini);
       }
       const indexBlock = document.createElement("div");

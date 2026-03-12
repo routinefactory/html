@@ -7,3 +7,9 @@
 This path is isolated for temporary verification of the diagnosis meta tab and does not change `searchadvisor/latest.json`.
 
 See `searchadvisor/README.md` for the shared runtime rules, deployment split, and the diagnosis meta date-window rule.
+
+Important direct-edit rule for this runtime:
+
+- keep `Ho(...)` patch anchors ASCII-only
+- do not insert raw Korean text into patch target strings
+- use `\uXXXX` escapes for Korean labels inside replacement strings
