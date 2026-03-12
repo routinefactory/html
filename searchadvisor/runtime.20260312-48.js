@@ -262,7 +262,7 @@ Error generating stack: `+l.message+`
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");\r
     svg.setAttribute("width", "100%");\r
     svg.setAttribute("height", H);\r
-    svg.setAttribute("viewBox", `0 0 ${W2} ${H}`);\r
+    svg.setAttribute("viewBox", "0 0 " + W2 + " " + H);\r
     svg.setAttribute("preserveAspectRatio", "none");\r
     svg.style.cssText = "display:block;width:100%;height:auto;cursor:crosshair";\r
     svg.innerHTML = \`<defs><linearGradient id="\${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="\${col}" stop-opacity="0.22"/><stop offset="100%" stop-color="\${col}" stop-opacity="0.01"/></linearGradient></defs><path d="\${area}" fill="url(#\${uid})"/><path d="\${path}" fill="none" stroke="\${col}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><line id="\${wid}" x1="0" y1="0" x2="0" y2="\${H}" stroke="#3d5a78" stroke-width="1" stroke-dasharray="3,2" opacity="0"/><circle id="\${cid}" cx="0" cy="0" r="3.5" fill="\${col}" stroke="#060b14" stroke-width="1.5" opacity="0"/>\`;\r
@@ -308,7 +308,7 @@ Error generating stack: `+l.message+`
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");\r
     svg.setAttribute("width", "100%");\r
     svg.setAttribute("height", H);\r
-    svg.setAttribute("viewBox", `0 0 ${W2} ${H}`);\r
+    svg.setAttribute("viewBox", "0 0 " + W2 + " " + H);\r
     svg.setAttribute("preserveAspectRatio", "none");\r
     svg.style.cssText = "display:block;width:100%;height:auto";\r
     const uid = "b" + Math.random().toString(36).slice(2, 5);\r
