@@ -2381,19 +2381,53 @@ Error generating stack: `+l.message+`
       (a.date || "").localeCompare(b.date || ""),
     );
     const fmtRangeDate = function (value) {
-      return String(value || "").replace(/\./g, "");
+      return String(value || "").replace(/[^\d]/g, "").slice(0, 8);
     };
-    const endDate =
+    const parseYmd = function (value) {
+      const normalized = fmtRangeDate(value);
+      if (normalized.length !== 8) return null;
+      const year = Number(normalized.slice(0, 4));
+      const month = Number(normalized.slice(4, 6));
+      const day = Number(normalized.slice(6, 8));
+      const time = Date.UTC(year, month - 1, day);
+      return Number.isFinite(time) ? new Date(time) : null;
+    };
+    const formatYmd = function (date) {
+      if (!date) return "";
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(date.getUTCDate()).padStart(2, "0");
+      return String(year) + month + day;
+    };
+    const todayKst = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }),
+    );
+    const yesterdayKst = new Date(
+      Date.UTC(
+        todayKst.getFullYear(),
+        todayKst.getMonth(),
+        todayKst.getDate() - 1,
+      ),
+    );
+    const latestExposeDate =
       exposeLogs.length && exposeLogs[exposeLogs.length - 1].date
-        ? fmtRangeDate(exposeLogs[exposeLogs.length - 1].date)
-        : new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const startDate =
+        ? parseYmd(exposeLogs[exposeLogs.length - 1].date)
+        : null;
+    const earliestExposeDate =
       exposeLogs.length && exposeLogs[0].date
-        ? fmtRangeDate(exposeLogs[0].date)
-        : new Date(Date.now() - 90 * 864e5)
-            .toISOString()
-            .slice(0, 10)
-            .replace(/-/g, "");
+        ? parseYmd(exposeLogs[0].date)
+        : null;
+    const effectiveEndDate =
+      latestExposeDate && latestExposeDate < yesterdayKst
+        ? latestExposeDate
+        : yesterdayKst;
+    const windowStartDate = new Date(effectiveEndDate.getTime() - 40 * 864e5);
+    const effectiveStartDate =
+      earliestExposeDate && earliestExposeDate > windowStartDate
+        ? earliestExposeDate
+        : windowStartDate;
+    const endDate = formatYmd(effectiveEndDate);
+    const startDate = formatYmd(effectiveStartDate);
     inflightDetail[site] = (async function () {
       try {
         const [cR, bR, mR] = await Promise.allSettled([
