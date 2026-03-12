@@ -2629,6 +2629,54 @@ Error generating stack: `+l.message+`
       return (row.date || "").slice(5);
     });
     const diagnosisStates = ["1", "2", "3", "4"];
+    const diagnosisStateMeta = {
+      "1": { label: "\uC0C9\uC778", color: C.green },
+      "2": { label: "\uC218\uC9D1\uC81C\uD55C", color: C.amber },
+      "3": { label: "\uAE30\uD0C0 \uC9C4\uB2E8", color: C.teal },
+      "4": { label: "SEO \uBB38\uC81C", color: C.red },
+    };
+    const diagnosisCodeMeta = {
+      "1000": {
+        label: "\uC0C9\uC778 \uD398\uC774\uC9C0",
+        group: "indexed",
+        color: C.green,
+      },
+      "2300": {
+        label: "\uAE30\uD0C0 \uC81C\uD55C \uD398\uC774\uC9C0",
+        group: "restricted",
+        color: C.amber,
+      },
+      "2400": {
+        label: "\uC811\uADFC \uBD88\uAC00 \uD398\uC774\uC9C0",
+        group: "restricted",
+        color: C.amber,
+      },
+      "2500": {
+        label: "\uC11C\uBC84 \uC811\uADFC \uBD88\uAC00\uB85C \uC218\uC9D1 \uC2E4\uD328",
+        group: "restricted",
+        color: C.orange,
+      },
+      "4001": {
+        label: "meta description \uB204\uB77D",
+        group: "seo",
+        color: C.red,
+      },
+      "4002": {
+        label: "title \uC694\uC18C 2\uAC1C \uC774\uC0C1",
+        group: "seo",
+        color: C.red,
+      },
+      "4007": {
+        label: "H1 \uC694\uC18C 2\uAC1C \uC774\uC0C1",
+        group: "seo",
+        color: C.red,
+      },
+      "4008": {
+        label: "alt \uC18D\uC131 \uB204\uB77D",
+        group: "seo",
+        color: C.red,
+      },
+    };
     const diagnosisLatest =
       diagnosisLogs.length > 0 ? diagnosisLogs[diagnosisLogs.length - 1] : null;
     const diagnosisFirst =
@@ -2642,6 +2690,71 @@ Error generating stack: `+l.message+`
     });
     const diagnosisTotalLatest = diagnosisTotals.reduce((a, b) => a + b, 0);
     const diagnosisTypeBuckets = diagnosisItem.typeCount || {};
+    const diagnosisTypeBucketKey = diagnosisTypeBuckets["0"]
+      ? "0"
+      : diagnosisTypeBuckets["90"]
+        ? "90"
+        : Object.keys(diagnosisTypeBuckets)
+            .sort(function (a, b) {
+              return Number(a) - Number(b);
+            })
+            .slice(-1)[0] || null;
+    const diagnosisTypeCountsLatest = diagnosisTypeBucketKey
+      ? diagnosisTypeBuckets[diagnosisTypeBucketKey] || {}
+      : {};
+    const diagnosisSeries = diagnosisStates.map(function (key) {
+      const meta = diagnosisStateMeta[key] || {
+        label: "S" + key,
+        color: C.sub,
+      };
+      const current = diagnosisLatestCounts[key] || 0;
+      const prev =
+        diagnosisFirst && diagnosisFirst.stateCount
+          ? diagnosisFirst.stateCount[key] || 0
+          : 0;
+      return {
+        key,
+        label: meta.label,
+        color: meta.color,
+        current,
+        prev,
+        delta: current - prev,
+        values: diagnosisLogs.map(function (row) {
+          return (row.stateCount && row.stateCount[key]) || 0;
+        }),
+      };
+    });
+    const diagnosisIndexedSeries = diagnosisSeries[0];
+    const diagnosisRestrictedSeries = diagnosisSeries[1];
+    const diagnosisOtherSeries = diagnosisSeries[2];
+    const diagnosisSeoSeries = diagnosisSeries[3];
+    const diagnosisIndexShare = diagnosisTotalLatest
+      ? Math.round((diagnosisIndexedSeries.current / diagnosisTotalLatest) * 100)
+      : 0;
+    const diagnosisCodeRows = Object.entries(diagnosisTypeCountsLatest)
+      .map(function (entry) {
+        const meta = diagnosisCodeMeta[entry[0]] || null;
+        return {
+          code: entry[0],
+          count: entry[1] || 0,
+          label: meta ? meta.label : "\uCF54\uB4DC " + entry[0],
+          group: meta ? meta.group : "other",
+          color: meta ? meta.color : C.sub,
+        };
+      })
+      .sort(function (a, b) {
+        return b.count - a.count;
+      });
+    const diagnosisSeoCodes = diagnosisCodeRows.filter(function (row) {
+      return row.group === "seo";
+    });
+    const diagnosisRestrictedCodes = diagnosisCodeRows.filter(function (row) {
+      return row.group === "restricted";
+    });
+    const diagnosisTopSeoCode =
+      diagnosisSeoCodes.length > 0 ? diagnosisSeoCodes[0] : null;
+    const diagnosisTopRestrictedCode =
+      diagnosisRestrictedCodes.length > 0 ? diagnosisRestrictedCodes[0] : null;
     const diagnosisStatus =
       diagnosisMeta && typeof diagnosisMeta.code !== "undefined"
         ? diagnosisMeta.code
@@ -2674,6 +2787,229 @@ Error generating stack: `+l.message+`
           return wrap;
         }
         const latestDate = diagnosisLatest && diagnosisLatest.date ? diagnosisLatest.date : "-";
+        const formatSigned = function (value) {
+          return (value >= 0 ? "+" : "") + fmt(value);
+        };
+        const buildCodeCard = function (title, rows, accent, emptyText) {
+          const card = document.createElement("div");
+          card.style.cssText =
+            "background:#0d1829;border:1px solid #1a2d45;border-radius:12px;padding:11px 12px 10px;margin-bottom:10px";
+          if (!rows.length) {
+            card.innerHTML =
+              '<div style="font-size:12px;font-weight:700;color:#e0ecff;margin-bottom:6px">' +
+              title +
+              '</div><div style="font-size:11px;color:#7a9ab8;line-height:1.65">' +
+              emptyText +
+              "</div>";
+            return card;
+          }
+          card.innerHTML =
+            '<div style="font-size:12px;font-weight:700;color:#e0ecff;margin-bottom:7px">' +
+            title +
+            "</div>" +
+            rows
+              .map(function (row) {
+                return (
+                  '<div style="padding:6px 0;border-bottom:1px solid #1a2d45">' +
+                  '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">' +
+                  '<span style="font-size:11px;line-height:1.55;color:#7a9ab8">' +
+                  row.label +
+                  '</span><b style="font-size:11px;color:' +
+                  accent +
+                  '">' +
+                  fmt(row.count) +
+                  '\uAC74</b></div>' +
+                  '<div style="font-size:10px;color:#3d5a78;margin-top:2px">code ' +
+                  row.code +
+                  "</div></div>"
+                );
+              })
+              .join("");
+          return card;
+        };
+        wrap.appendChild(
+          kpiGrid([
+            {
+              label: "\uC0C9\uC778 \uD398\uC774\uC9C0",
+              value: fmt(diagnosisIndexedSeries.current),
+              sub: latestDate,
+              color: diagnosisIndexedSeries.color,
+            },
+            {
+              label: "SEO \uBB38\uC81C \uD398\uC774\uC9C0",
+              value: fmt(diagnosisSeoSeries.current),
+              sub: diagnosisTopSeoCode
+                ? diagnosisTopSeoCode.label
+                : "\uC8FC\uC694 SEO \uBB38\uC81C \uC5C6\uC74C",
+              color: diagnosisSeoSeries.color,
+            },
+            {
+              label: "\uC218\uC9D1\uC81C\uD55C \uD398\uC774\uC9C0",
+              value: fmt(diagnosisRestrictedSeries.current),
+              sub: diagnosisTopRestrictedCode
+                ? diagnosisTopRestrictedCode.label
+                : "\uC8FC\uC694 \uC81C\uD55C \uC5C6\uC74C",
+              color: diagnosisRestrictedSeries.color,
+            },
+            {
+              label: "\uC0C9\uC778 \uBE44\uC911",
+              value: diagnosisIndexShare + "%",
+              sub: diagnosisRangeText,
+              color: C.blue,
+            },
+          ]),
+        );
+        wrap.appendChild(
+          chartCard(
+            "\uC0C9\uC778 \uCD94\uC774",
+            fmt(diagnosisIndexedSeries.current) +
+              " (" +
+              formatSigned(diagnosisIndexedSeries.delta) +
+              ")",
+            diagnosisIndexedSeries.color,
+            sparkline(
+              diagnosisIndexedSeries.values,
+              diagnosisDates,
+              80,
+              diagnosisIndexedSeries.color,
+              "\uAC74",
+            ),
+            diagnosisDates,
+          ),
+        );
+        wrap.appendChild(
+          chartCard(
+            "\uC218\uC9D1\uC81C\uD55C \uCD94\uC774",
+            fmt(diagnosisRestrictedSeries.current) +
+              " (" +
+              formatSigned(diagnosisRestrictedSeries.delta) +
+              ")",
+            diagnosisRestrictedSeries.color,
+            sparkline(
+              diagnosisRestrictedSeries.values,
+              diagnosisDates,
+              80,
+              diagnosisRestrictedSeries.color,
+              "\uAC74",
+            ),
+            diagnosisDates,
+          ),
+        );
+        wrap.appendChild(
+          chartCard(
+            "SEO \uBB38\uC81C \uCD94\uC774",
+            fmt(diagnosisSeoSeries.current) +
+              " (" +
+              formatSigned(diagnosisSeoSeries.delta) +
+              ")",
+            diagnosisSeoSeries.color,
+            sparkline(
+              diagnosisSeoSeries.values,
+              diagnosisDates,
+              80,
+              diagnosisSeoSeries.color,
+              "\uAC74",
+            ),
+            diagnosisDates,
+          ),
+        );
+        wrap.appendChild(
+          chartCard(
+            "\uAE30\uD0C0 \uC9C4\uB2E8 \uCD94\uC774",
+            fmt(diagnosisOtherSeries.current) +
+              " (" +
+              formatSigned(diagnosisOtherSeries.delta) +
+              ")",
+            diagnosisOtherSeries.color,
+            sparkline(
+              diagnosisOtherSeries.values,
+              diagnosisDates,
+              80,
+              diagnosisOtherSeries.color,
+              "\uAC74",
+            ),
+            diagnosisDates,
+          ),
+        );
+        wrap.appendChild(
+          chartCard(
+            "\uCD5C\uC2E0 4\uBD84\uB958 \uBD84\uD3EC",
+            latestDate,
+            C.purple,
+            barchart(
+              diagnosisSeries.map(function (series) {
+                return series.current;
+              }),
+              diagnosisSeries.map(function (series) {
+                return series.label;
+              }),
+              70,
+              C.purple,
+              "\uAC74",
+            ),
+            diagnosisSeries.map(function (series) {
+              return series.label;
+            }),
+          ),
+        );
+        wrap.appendChild(secTitle("\uCD5C\uC2E0 \uBD84\uB958 \uC694\uC57D"));
+        diagnosisSeries.forEach(function (series) {
+          const box = document.createElement("div");
+          box.style.cssText =
+            "background:#0d1829;border:1px solid #1a2d45;border-radius:9px;padding:10px 11px;margin-bottom:6px";
+          box.innerHTML =
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:11px;color:#7a9ab8">' +
+            series.label +
+            '</span><b style="color:' +
+            series.color +
+            '">' +
+            fmt(series.current) +
+            '\uAC74</b></div>' +
+            hbar(series.current, diagnosisTotalLatest || 1, series.color) +
+            '<div style="font-size:10px;color:#3d5a78;margin-top:5px">\uAE30\uAC04 \uBCC0\uD654 <b style="color:' +
+            (series.delta >= 0 ? C.green : C.red) +
+            '">' +
+            formatSigned(series.delta) +
+            '</b></div><div style="font-size:10px;color:#3d5a78;margin-top:2px">\uBE44\uC911 ' +
+            (diagnosisTotalLatest
+              ? Math.round((series.current / diagnosisTotalLatest) * 100)
+              : 0) +
+            "%</div>";
+          wrap.appendChild(box);
+        });
+        wrap.appendChild(secTitle("SEO \uBB38\uC81C \uCF54\uB4DC"));
+        wrap.appendChild(
+          buildCodeCard(
+            "\uCD5C\uC2E0 SEO \uBB38\uC81C \uC0C1\uC704 \uCF54\uB4DC",
+            diagnosisSeoCodes.slice(0, 6),
+            C.red,
+            "SEO \uBB38\uC81C \uCF54\uB4DC \uC9D1\uACC4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
+          ),
+        );
+        wrap.appendChild(secTitle("\uC218\uC9D1\uC81C\uD55C \uCF54\uB4DC"));
+        wrap.appendChild(
+          buildCodeCard(
+            "\uCD5C\uC2E0 \uC218\uC9D1\uC81C\uD55C \uC0C1\uC704 \uCF54\uB4DC",
+            diagnosisRestrictedCodes.slice(0, 6),
+            C.amber,
+            "\uC218\uC9D1\uC81C\uD55C \uCF54\uB4DC \uC9D1\uACC4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
+          ),
+        );
+        wrap.appendChild(
+          ibox(
+            "blue",
+            "\uC0C9\uC778 \uCD94\uC774\uB294 state 1, \uC218\uC9D1\uC81C\uD55C\uC740 state 2, SEO \uBB38\uC81C\uB294 state 4 \uAE30\uC900\uC73C\uB85C \uD45C\uC2DC\uD588\uC2B5\uB2C8\uB2E4. \uCF54\uB4DC \uBD84\uD574\uB294 latest typeCount bucket " +
+              (diagnosisTypeBucketKey || "-") +
+              " \uAE30\uC900 \uD604\uC7AC \uBD84\uD3EC\uB9CC \uBCF4\uC5EC\uC90D\uB2C8\uB2E4.",
+          ),
+        );
+        wrap.appendChild(
+          ibox(
+            "amber",
+            "1000\uC740 \uC0C9\uC778, 2300/2400/2500\uC740 \uC218\uC9D1\uC81C\uD55C, 4001/4002/4007/4008\uC740 SEO \uBB38\uC81C\uB85C \uD574\uC11D\uD588\uC2B5\uB2C8\uB2E4. state 3\uC740 \uAD00\uCE21\uCE58\uAC00 \uC801\uC5B4 \uAE30\uD0C0 \uC9C4\uB2E8\uC73C\uB85C \uC720\uC9C0\uD588\uC2B5\uB2C8\uB2E4.",
+          ),
+        );
+        return wrap;
         const splitCount =
           diagnosisMeta && diagnosisMeta.meta && diagnosisMeta.meta.splitCount
             ? diagnosisMeta.meta.splitCount
