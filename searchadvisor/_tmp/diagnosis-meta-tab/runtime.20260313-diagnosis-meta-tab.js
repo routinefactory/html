@@ -293,12 +293,12 @@ Error generating stack: `+l.message+`
               (W2 - pR) +\r
               '" y2="' +\r
               entry.y +\r
-              '" stroke="#2a415d" stroke-width="1" stroke-dasharray="4,4" opacity="0.65"/>' +\r
+              '" stroke="#9cb6cf" stroke-width="1" stroke-dasharray="4,4" opacity="0.34"/>' +\r
               '<text x="' +\r
               +(W2 / 2).toFixed(1) +\r
               '" y="' +\r
               entry.y +\r
-              '" fill="#5f7e9e" font-size="9" text-anchor="middle" dominant-baseline="middle" opacity="0.88" style="paint-order:stroke;stroke:#08111d;stroke-width:3;stroke-linejoin:round">' +\r
+              '" fill="#d7e5f4" font-size="9" font-weight="700" text-anchor="middle" dominant-baseline="middle" opacity="0.78" style="paint-order:stroke;stroke:#07111d;stroke-width:4;stroke-linejoin:round">' +\r
               formatAxisValue(entry.value) +\r
               "</text>"\r
             );\r
