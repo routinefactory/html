@@ -1310,6 +1310,22 @@ function barchart(vals, labels, H, col, unit) {\r
     const avgCtr = totalE ? (totalC / totalE) * 100 : 0;\r
     const cSt = st(clicks);\r
     const period = item.period || {};\r
+    const diagnosisItem =\r
+      (data && data.diagnosisMeta && data.diagnosisMeta.items && data.diagnosisMeta.items[0]) || {};\r
+    const diagnosisLogs = [...(diagnosisItem.meta || [])].sort((a, b) =>\r
+      (a.date || "").localeCompare(b.date || ""),\r
+    );\r
+    const diagnosisLatest =\r
+      diagnosisLogs.length > 0 ? diagnosisLogs[diagnosisLogs.length - 1] : null;\r
+    const diagnosisLatestCounts =\r
+      diagnosisLatest && diagnosisLatest.stateCount ? diagnosisLatest.stateCount : {};\r
+    const diagnosisIndexedValues = diagnosisLogs.map(function (row) {\r
+      return (row.stateCount && row.stateCount["1"]) || 0;\r
+    });\r
+    const diagnosisIndexedDates = diagnosisLogs.map(function (row) {\r
+      const digits = String(row.date || "").replace(/[^\\d]/g, "");\r
+      return digits.length === 8 ? fmtB(digits) : row.date || "";\r
+    });\r
     return {\r
       site,\r
       totalC,\r
@@ -1320,10 +1336,131 @@ function barchart(vals, labels, H, col, unit) {\r
       prevClickRatio: period.prevClickRatio,\r
       logs,\r
       clicks,\r
+      diagnosisIndexedCurrent: diagnosisLatestCounts["1"] || 0,\r
+      diagnosisIndexedValues,\r
+      diagnosisIndexedDates,\r
+      diagnosisLatestDate: diagnosisLatest && diagnosisLatest.date ? diagnosisLatest.date : "-",\r
+      diagnosisMetaCode:\r
+        data && data.diagnosisMeta && typeof data.diagnosisMeta.code !== "undefined"\r
+          ? data.diagnosisMeta.code\r
+          : null,\r
+      diagnosisMetaStatus:\r
+        data && typeof data.diagnosisMetaStatus !== "undefined"\r
+          ? data.diagnosisMetaStatus\r
+          : null,\r
+      diagnosisMetaRange:\r
+        data && typeof data.diagnosisMetaRange !== "undefined"\r
+          ? data.diagnosisMetaRange\r
+          : null,\r
     };\r
   }\r
   const inflightExpose = {};\r
   const inflightDetail = {};\r
+  const inflightDiagnosisMeta = {};\r
+  function hasDiagnosisMetaSnapshot(data) {\r
+    return !!(\r
+      data &&\r
+      "diagnosisMeta" in data &&\r
+      "diagnosisMetaStatus" in data &&\r
+      "diagnosisMetaRange" in data\r
+    );\r
+  }\r
+  function getDiagnosisMetaRange(baseData) {\r
+    const exposeItem =\r
+      (baseData && baseData.expose && baseData.expose.items && baseData.expose.items[0]) ||\r
+      {};\r
+    const exposeLogs = [...(exposeItem.logs || [])].sort((a, b) =>\r
+      (a.date || "").localeCompare(b.date || ""),\r
+    );\r
+    const fmtRangeDate = function (value) {\r
+      return String(value || "").replace(/[^\\d]/g, "").slice(0, 8);\r
+    };\r
+    const parseYmd = function (value) {\r
+      const normalized = fmtRangeDate(value);\r
+      if (normalized.length !== 8) return null;\r
+      const year = Number(normalized.slice(0, 4));\r
+      const month = Number(normalized.slice(4, 6));\r
+      const day = Number(normalized.slice(6, 8));\r
+      const time = Date.UTC(year, month - 1, day);\r
+      return Number.isFinite(time) ? new Date(time) : null;\r
+    };\r
+    const formatYmd = function (date) {\r
+      if (!date) return "";\r
+      const year = date.getUTCFullYear();\r
+      const month = String(date.getUTCMonth() + 1).padStart(2, "0");\r
+      const day = String(date.getUTCDate()).padStart(2, "0");\r
+      return String(year) + month + day;\r
+    };\r
+    const todayKstLocal = new Date(\r
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }),\r
+    );\r
+    const todayKst = new Date(\r
+      Date.UTC(\r
+        todayKstLocal.getFullYear(),\r
+        todayKstLocal.getMonth(),\r
+        todayKstLocal.getDate(),\r
+      ),\r
+    );\r
+    const latestExposeDate =\r
+      exposeLogs.length && exposeLogs[exposeLogs.length - 1].date\r
+        ? parseYmd(exposeLogs[exposeLogs.length - 1].date)\r
+        : null;\r
+    const earliestExposeDate =\r
+      exposeLogs.length && exposeLogs[0].date ? parseYmd(exposeLogs[0].date) : null;\r
+    const effectiveEndDate =\r
+      latestExposeDate && latestExposeDate < todayKst ? latestExposeDate : todayKst;\r
+    const windowStartDate = new Date(effectiveEndDate.getTime() - 40 * 864e5);\r
+    const effectiveStartDate =\r
+      earliestExposeDate && earliestExposeDate > windowStartDate\r
+        ? earliestExposeDate\r
+        : windowStartDate;\r
+    return {\r
+      startDate: formatYmd(effectiveStartDate),\r
+      endDate: formatYmd(effectiveEndDate),\r
+    };\r
+  }\r
+  async function fetchDiagnosisMeta(site, seedData) {\r
+    const baseData = seedData || (await fetchExposeData(site));\r
+    if (hasDiagnosisMetaSnapshot(baseData)) return baseData;\r
+    if (inflightDiagnosisMeta[site]) return inflightDiagnosisMeta[site];\r
+    const enc = encodeURIComponent(site),\r
+      base = "https://searchadvisor.naver.com/api-console/report";\r
+    const range = getDiagnosisMetaRange(baseData);\r
+    inflightDiagnosisMeta[site] = (async function () {\r
+      try {\r
+        let response = null;\r
+        let diagnosisMeta = null;\r
+        try {\r
+          response = await fetch(\r
+            base +\r
+              "/diagnosis/meta/" +\r
+              encId +\r
+              "?site=" +\r
+              enc +\r
+              "&startDate=" +\r
+              range.startDate +\r
+              "&endDate=" +\r
+              range.endDate,\r
+            { credentials: "include", headers: { accept: "application/json" } },\r
+          );\r
+          diagnosisMeta = response.ok ? await response.json() : null;\r
+        } catch (e) {}\r
+        const result = {\r
+          ...baseData,\r
+          diagnosisMeta,\r
+          diagnosisMetaStatus: response ? response.status : null,\r
+          diagnosisMetaRange: range,\r
+          detailLoaded: !!baseData.detailLoaded,\r
+        };\r
+        memCache[site] = result;\r
+        setCachedData(site, result);\r
+        return result;\r
+      } finally {\r
+        delete inflightDiagnosisMeta[site];\r
+      }\r
+    })();\r
+    return inflightDiagnosisMeta[site];\r
+  }\r
   async function fetchExposeData(site) {\r
     if (memCache[site] && memCache[site].expose) return memCache[site];\r
     const cached = normalizeSiteData(getCachedData(site));\r
@@ -1599,6 +1736,7 @@ function barchart(vals, labels, H, col, unit) {\r
       downloadSnapshot();\r
     });\r
   async function renderAllSites() {\r
+    const requestId = ++allViewReqId;\r
     setAllSitesLabel();\r
     bdEl.innerHTML =\r
       '<div style="padding:30px 20px;text-align:center;color:#3d5a78">⏳ 전체 데이터 로딩 중...</div>';\r
@@ -2329,6 +2467,7 @@ function barchart(vals, labels, H, col, unit) {\r
     curSite = null,
     curTab = "overview";
   let siteViewReqId = 0;
+  let allViewReqId = 0;
   const __sadvListeners = new Set();
   let __sadvInitialReady = false;
   const __sadvReadyResolvers = [];
@@ -2492,14 +2631,18 @@ function barchart(vals, labels, H, col, unit) {\r
       detailLoaded =
         typeof data.detailLoaded === "boolean"
           ? data.detailLoaded
-          : "crawl" in data || "backlink" in data || "diagnosisMeta" in data;
+          : "crawl" in data || "backlink" in data;
+    const hasDiagnosisMeta =
+      "diagnosisMeta" in data ||
+      "diagnosisMetaStatus" in data ||
+      "diagnosisMetaRange" in data;
     return {
       expose,
       crawl: detailLoaded ? (data.crawl ?? null) : null,
       backlink: detailLoaded ? (data.backlink ?? null) : null,
-      diagnosisMeta: detailLoaded ? (data.diagnosisMeta ?? null) : null,
-      diagnosisMetaStatus: detailLoaded ? (data.diagnosisMetaStatus ?? null) : null,
-      diagnosisMetaRange: detailLoaded ? (data.diagnosisMetaRange ?? null) : null,
+      diagnosisMeta: hasDiagnosisMeta ? (data.diagnosisMeta ?? null) : null,
+      diagnosisMetaStatus: hasDiagnosisMeta ? (data.diagnosisMetaStatus ?? null) : null,
+      diagnosisMetaRange: hasDiagnosisMeta ? (data.diagnosisMetaRange ?? null) : null,
       detailLoaded,
     };
   }`),s=Ho(s,`        const result = {
@@ -2569,78 +2712,22 @@ function barchart(vals, labels, H, col, unit) {\r
     })();
     return inflightDetail[site];
   }`,`  async function fetchSiteData(site) {
-    const baseData = await fetchExposeData(site);
-    if (
-      baseData.detailLoaded &&
-      "diagnosisMeta" in baseData &&
-      "diagnosisMetaStatus" in baseData &&
-      "diagnosisMetaRange" in baseData
-    )
-      return baseData;
+    const exposedData = await fetchExposeData(site);
+    const baseData = hasDiagnosisMetaSnapshot(exposedData)
+      ? exposedData
+      : await fetchDiagnosisMeta(site, exposedData);
+    if (baseData.detailLoaded) return baseData;
     if (inflightDetail[site]) return inflightDetail[site];
     const enc = encodeURIComponent(site),
       base = "https://searchadvisor.naver.com/api-console/report";
-    const exposeItem =
-      (baseData.expose && baseData.expose.items && baseData.expose.items[0]) || {};
-    const exposeLogs = [...(exposeItem.logs || [])].sort((a, b) =>
-      (a.date || "").localeCompare(b.date || ""),
-    );
-    const fmtRangeDate = function (value) {
-      return String(value || "").replace(/[^\d]/g, "").slice(0, 8);
-    };
-    const parseYmd = function (value) {
-      const normalized = fmtRangeDate(value);
-      if (normalized.length !== 8) return null;
-      const year = Number(normalized.slice(0, 4));
-      const month = Number(normalized.slice(4, 6));
-      const day = Number(normalized.slice(6, 8));
-      const time = Date.UTC(year, month - 1, day);
-      return Number.isFinite(time) ? new Date(time) : null;
-    };
-    const formatYmd = function (date) {
-      if (!date) return "";
-      const year = date.getUTCFullYear();
-      const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-      const day = String(date.getUTCDate()).padStart(2, "0");
-      return String(year) + month + day;
-    };
-    // diagnosis/meta does not follow the wider expose/crawl window.
-    // Match the live diagnosis page behavior: today in KST plus the trailing 41-day window.
-    const todayKstLocal = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }),
-    );
-    const todayKst = new Date(
-      Date.UTC(
-        todayKstLocal.getFullYear(),
-        todayKstLocal.getMonth(),
-        todayKstLocal.getDate(),
-      ),
-    );
-    const latestExposeDate =
-      exposeLogs.length && exposeLogs[exposeLogs.length - 1].date
-        ? parseYmd(exposeLogs[exposeLogs.length - 1].date)
-        : null;
-    const earliestExposeDate =
-      exposeLogs.length && exposeLogs[0].date
-        ? parseYmd(exposeLogs[0].date)
-        : null;
-    const effectiveEndDate =
-      latestExposeDate && latestExposeDate < todayKst ? latestExposeDate : todayKst;
-    const windowStartDate = new Date(effectiveEndDate.getTime() - 40 * 864e5);
-    const effectiveStartDate =
-      earliestExposeDate && earliestExposeDate > windowStartDate
-        ? earliestExposeDate
-        : windowStartDate;
     const detailEndDate = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const detailStartDate = new Date(Date.now() - 90 * 864e5)
       .toISOString()
       .slice(0, 10)
       .replace(/-/g, "");
-    const endDate = formatYmd(effectiveEndDate);
-    const startDate = formatYmd(effectiveStartDate);
     inflightDetail[site] = (async function () {
       try {
-        const [cR, bR, mR] = await Promise.allSettled([
+        const [cR, bR] = await Promise.allSettled([
           fetch(
             base +
               "/crawl/" +
@@ -2666,37 +2753,20 @@ function barchart(vals, labels, H, col, unit) {\r
               detailEndDate,
             { credentials: "include", headers: { accept: "application/json" } },
           ),
-          fetch(
-            base +
-              "/diagnosis/meta/" +
-              encId +
-              "?site=" +
-              enc +
-              "&startDate=" +
-              startDate +
-              "&endDate=" +
-              endDate,
-            { credentials: "include", headers: { accept: "application/json" } },
-          ),
         ]);
         const crawl =
           cR.status === "fulfilled" && cR.value.ok ? await cR.value.json() : null;
         const backlink =
           bR.status === "fulfilled" && bR.value.ok ? await bR.value.json() : null;
-        const diagnosisMetaResponse = mR.status === "fulfilled" ? mR.value : null;
-        const diagnosisMeta =
-          diagnosisMetaResponse && diagnosisMetaResponse.ok
-            ? await diagnosisMetaResponse.json()
-            : null;
         const result = {
           ...baseData,
           crawl,
           backlink,
-          diagnosisMeta,
-          diagnosisMetaStatus: diagnosisMetaResponse
-            ? diagnosisMetaResponse.status
-            : null,
-          diagnosisMetaRange: { startDate, endDate },
+          diagnosisMeta: "diagnosisMeta" in baseData ? baseData.diagnosisMeta : null,
+          diagnosisMetaStatus:
+            "diagnosisMetaStatus" in baseData ? baseData.diagnosisMetaStatus : null,
+          diagnosisMetaRange:
+            "diagnosisMetaRange" in baseData ? baseData.diagnosisMetaRange : null,
           detailLoaded: true,
         };
         memCache[site] = result;
@@ -3393,7 +3463,142 @@ function barchart(vals, labels, H, col, unit) {\r
         );
         return wrap;
       },
-      insight: function () {`),s=Ho(s,`        EXPORT_PAYLOAD.dataBySite[site] || {
+      insight: function () {`),s=Ho(s,`    bdEl.innerHTML =
+      '<div style="padding:30px 20px;text-align:center;color:#3d5a78">???꾩껜 ?곗씠??濡쒕뵫 以?..</div>';`,`    const loading = document.createElement("div");
+    loading.style.cssText =
+      "padding:24px 18px 20px;color:#7a9ab8;text-align:left;line-height:1.6";
+    loading.innerHTML =
+      '<div style="font-size:13px;font-weight:700;color:#d4ecff;margin-bottom:8px">전체 현황을 준비 중입니다</div>' +
+      '<div id="sadv-all-progress-detail" style="font-size:11px;margin-bottom:10px">기본 리포트를 불러오는 중입니다.</div>' +
+      '<div style="height:10px;border-radius:999px;background:#0d1829;border:1px solid #1a2d45;overflow:hidden"><div id="sadv-all-progress-bar" style="width:6%;height:100%;background:linear-gradient(90deg,#40c4ff,#00e676)"></div></div>' +
+      '<div id="sadv-all-progress-meta" style="font-size:10px;color:#3d5a78;margin-top:8px">메타 진단은 2개씩 천천히 요청합니다.</div>';
+    bdEl.innerHTML = "";
+    bdEl.appendChild(loading);`),s=Ho(s,`    const sitesToLoad = allSites;
+    const results = await fetchExposeDataBatch(sitesToLoad);
+    const rows = sitesToLoad.map((site, i) =>
+      results[i].status === "fulfilled"
+        ? buildSiteSummaryRow(site, results[i].value)
+        : buildSiteSummaryRow(site, null),
+    );`,`    const sitesToLoad = allSites;
+    const siteDataBySite = {};
+    const loadingDetail = loading.querySelector("#sadv-all-progress-detail");
+    const loadingBar = loading.querySelector("#sadv-all-progress-bar");
+    const loadingMeta = loading.querySelector("#sadv-all-progress-meta");
+    const setProgress = function (label, ratio, note) {
+      if (requestId !== allViewReqId || curMode !== "all") return;
+      if (loadingDetail) loadingDetail.textContent = label;
+      if (loadingBar) loadingBar.style.width = Math.max(6, Math.round(ratio * 100)) + "%";
+      if (loadingMeta && note) loadingMeta.textContent = note;
+    };
+    const exposeResults = [];
+    for (let i = 0; i < sitesToLoad.length; i += ALL_SITES_BATCH) {
+      const batchSites = sitesToLoad.slice(i, i + ALL_SITES_BATCH);
+      setProgress(
+        "기본 리포트 " +
+          Math.min(i + batchSites.length, sitesToLoad.length) +
+          " / " +
+          sitesToLoad.length,
+        0.08 + (Math.min(i + batchSites.length, sitesToLoad.length) / sitesToLoad.length) * 0.42,
+      );
+      const batchResults = await Promise.allSettled(batchSites.map((site) => fetchExposeData(site)));
+      if (requestId !== allViewReqId || curMode !== "all") return;
+      batchResults.forEach(function (result, offset) {
+        exposeResults[i + offset] = result;
+        if (result.status === "fulfilled") {
+          siteDataBySite[batchSites[offset]] = result.value;
+        }
+      });
+    }
+    const metaBatchSize = 2;
+    let metaLoaded = 0;
+    for (let i = 0; i < sitesToLoad.length; i += metaBatchSize) {
+      const batchSites = sitesToLoad.slice(i, i + metaBatchSize);
+      setProgress(
+        "색인 진단 " + metaLoaded + " / " + sitesToLoad.length,
+        0.55 + (metaLoaded / Math.max(1, sitesToLoad.length)) * 0.38,
+        "메타 진단은 2개씩 천천히 요청해 차단 위험을 낮춥니다.",
+      );
+      const batchResults = await Promise.allSettled(
+        batchSites.map((site) => fetchDiagnosisMeta(site, siteDataBySite[site] || null)),
+      );
+      if (requestId !== allViewReqId || curMode !== "all") return;
+      batchResults.forEach(function (result, offset) {
+        metaLoaded += 1;
+        if (result.status === "fulfilled") {
+          siteDataBySite[batchSites[offset]] = result.value;
+        }
+      });
+      setProgress(
+        "색인 진단 " + metaLoaded + " / " + sitesToLoad.length,
+        0.55 + (metaLoaded / Math.max(1, sitesToLoad.length)) * 0.38,
+        "가져온 색인 진단 캐시는 사이트별 탭에서도 그대로 재사용합니다.",
+      );
+      if (i + metaBatchSize < sitesToLoad.length) {
+        await new Promise((resolve) => setTimeout(resolve, 140));
+      }
+    }
+    const rows = sitesToLoad.map((site, i) =>
+      siteDataBySite[site]
+        ? buildSiteSummaryRow(site, siteDataBySite[site])
+        : exposeResults[i] && exposeResults[i].status === "fulfilled"
+          ? buildSiteSummaryRow(site, exposeResults[i].value)
+          : buildSiteSummaryRow(site, null),
+    );`),s=Ho(s,`      if (r.clicks && r.clicks.length > 1) {
+        const miniDates = (r.logs || []).map((l) => fmtB(l.date));
+        const mini = sparkline(r.clicks, miniDates, 34, col, "??);
+        mini.style.cssText += "opacity:.7";
+        card.appendChild(mini);
+      }`,`      if (r.clicks && r.clicks.length > 1) {
+        const miniDates = (r.logs || []).map((l) => fmtB(l.date));
+        const mini = sparkline(r.clicks, miniDates, 34, col, "??);
+        mini.style.cssText += "opacity:.7";
+        card.appendChild(mini);
+      }
+      const indexBlock = document.createElement("div");
+      indexBlock.style.cssText =
+        "margin-top:8px;padding-top:8px;border-top:1px solid rgba(26,45,69,.9)";
+      if (r.diagnosisIndexedValues && r.diagnosisIndexedValues.length > 1) {
+        indexBlock.innerHTML =
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">' +
+          '<span style="font-size:10px;font-weight:700;color:#7a9ab8">색인 추이</span>' +
+          '<span style="font-size:12px;font-weight:800;color:' +
+          C.green +
+          '">' +
+          fmt(r.diagnosisIndexedCurrent) +
+          '건</span></div>';
+        const indexMini = sparkline(
+          r.diagnosisIndexedValues,
+          r.diagnosisIndexedDates,
+          42,
+          C.green,
+          "건",
+          { minValue: 0 },
+        );
+        indexMini.style.cssText += "opacity:.86";
+        indexBlock.appendChild(indexMini);
+      } else {
+        const metaCode =
+          r.diagnosisMetaCode == null ? "-" : String(r.diagnosisMetaCode);
+        const httpText =
+          r.diagnosisMetaStatus == null ? "-" : String(r.diagnosisMetaStatus);
+        indexBlock.innerHTML =
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">' +
+          '<span style="font-size:10px;font-weight:700;color:#7a9ab8">색인 추이</span>' +
+          '<span style="font-size:11px;color:#3d5a78">응답 확인</span></div>' +
+          '<div style="font-size:10px;line-height:1.55;color:#6482a2">HTTP ' +
+          httpText +
+          " / code " +
+          metaCode +
+          "</div>";
+      }
+      card.appendChild(indexBlock);`),s=Ho(s,`    bdEl.innerHTML = "";
+    bdEl.appendChild(wrap);
+    bdEl.scrollTop = 0;
+  }`,`    if (requestId !== allViewReqId || curMode !== "all") return;
+    bdEl.innerHTML = "";
+    bdEl.appendChild(wrap);
+    bdEl.scrollTop = 0;
+  }`),s=Ho(s,`        EXPORT_PAYLOAD.dataBySite[site] || {
           expose: null,
           crawl: null,
           backlink: null,

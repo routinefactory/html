@@ -52,6 +52,23 @@ When touching the diagnosis meta tab:
 2. Do not copy the `crawl/backlink` date rule without verification.
 3. Prefer real network capture over inference.
 
+## All-Mode Meta Prefetch Rules
+
+If the all-sites dashboard needs diagnosis meta data, do not turn the initial load into a burst of full-detail calls.
+
+- `전체 현황` should still fetch `expose` first for every site.
+- If index-count data is needed there, prefetch only `diagnosis/meta` with low concurrency.
+- Treat `diagnosis/meta` as a separate cache layer from `crawl/backlink`.
+- Reuse the prefetched diagnosis meta snapshot when the user later opens `사이트별` or the `메타` tab.
+- Do not re-request `diagnosis/meta` for the same site in the same session unless the user refreshes or the cache expires.
+
+Recommended behavior:
+
+1. Batch `expose` first.
+2. Fetch `diagnosis/meta` slowly, for example 2 sites at a time.
+3. Show progress explicitly while the extra diagnosis pass is running.
+4. Keep `crawl/backlink` as site-detail requests, not all-sites default requests.
+
 ## Repeated Failure Modes
 
 - `HTTP 200` does not mean the diagnosis request is valid. The payload can still return an internal failure code.
