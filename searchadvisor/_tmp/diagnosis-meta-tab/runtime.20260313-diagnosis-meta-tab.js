@@ -1819,6 +1819,23 @@ function barchart(vals, labels, H, col, unit) {\r
             dates,\r
           ),\r
         );\r
+        if (diagnosisLogs.length) {\r
+          wrap.appendChild(\r
+            chartCard(\r
+              "\uC0C9\uC778 \uCD94\uC774",\r
+              fmt(diagnosisIndexedSeries.current) + "\uAC74",\r
+              diagnosisIndexedSeries.color,\r
+              sparkline(\r
+                diagnosisIndexedOverviewValues,\r
+                dates,\r
+                80,\r
+                diagnosisIndexedSeries.color,\r
+                "\uAC74",\r
+              ),\r
+              dates,\r
+            ),\r
+          );\r
+        }\r
         const topEl = document.createElement("div");\r
         topEl.appendChild(secTitle("클릭 TOP 3"));\r
         [...logs]\r
@@ -2777,6 +2794,14 @@ function barchart(vals, labels, H, col, unit) {\r
     );
     const diagnosisDates = diagnosisLogs.map(function (row) {
       return (row.date || "").slice(5);
+    });
+    const diagnosisIndexedByDate = diagnosisLogs.reduce(function (acc, row) {
+      const key = String(row.date || "").replace(/\D/g, "");
+      acc[key] = (row.stateCount && row.stateCount["1"]) || 0;
+      return acc;
+    }, {});
+    const diagnosisIndexedOverviewValues = logs.map(function (row) {
+      return diagnosisIndexedByDate[row.date] || 0;
     });
     const diagnosisStates = ["1", "2", "3", "4"];
     const diagnosisStateMeta = {
