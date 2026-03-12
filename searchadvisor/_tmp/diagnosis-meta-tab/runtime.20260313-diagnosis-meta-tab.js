@@ -2801,7 +2801,8 @@ function barchart(vals, labels, H, col, unit) {\r
       return acc;
     }, {});
     const diagnosisIndexedOverviewValues = logs.map(function (row) {
-      return diagnosisIndexedByDate[row.date] || 0;
+      const key = String(row.date || "").replace(/\D/g, "");
+      return diagnosisIndexedByDate[key] || 0;
     });
     const diagnosisStates = ["1", "2", "3", "4"];
     const diagnosisStateMeta = {
