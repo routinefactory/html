@@ -3486,8 +3486,10 @@ function barchart(vals, labels, H, col, unit) {\r
     const loadingDetail = loading.querySelector("#sadv-all-progress-detail");
     const loadingBar = loading.querySelector("#sadv-all-progress-bar");
     const loadingMeta = loading.querySelector("#sadv-all-progress-meta");
+    let missingDiagnosisMetaCount = null;
     const setProgress = function (label, ratio, note) {
       if (requestId !== allViewReqId || curMode !== "all") return;
+      if (ratio >= 0.55 && missingDiagnosisMetaCount === 0) return;
       if (loadingDetail) loadingDetail.textContent = label;
       if (loadingBar) loadingBar.style.width = Math.max(6, Math.round(ratio * 100)) + "%";
       if (loadingMeta && note) loadingMeta.textContent = note;
@@ -3511,6 +3513,9 @@ function barchart(vals, labels, H, col, unit) {\r
         }
       });
     }
+    missingDiagnosisMetaCount = sitesToLoad.filter(function (site) {
+      return !hasDiagnosisMetaSnapshot(siteDataBySite[site] || null);
+    }).length;
     const metaBatchSize = 2;
     let metaLoaded = 0;
     for (let i = 0; i < sitesToLoad.length; i += metaBatchSize) {
@@ -3535,7 +3540,7 @@ function barchart(vals, labels, H, col, unit) {\r
         0.55 + (metaLoaded / Math.max(1, sitesToLoad.length)) * 0.38,
         "가져온 색인 진단 캐시는 사이트별 탭에서도 그대로 재사용합니다.",
       );
-      if (i + metaBatchSize < sitesToLoad.length) {
+      if (missingDiagnosisMetaCount !== 0 && i + metaBatchSize < sitesToLoad.length) {
         await new Promise((resolve) => setTimeout(resolve, 140));
       }
     }
