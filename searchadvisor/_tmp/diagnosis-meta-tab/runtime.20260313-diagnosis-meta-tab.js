@@ -239,7 +239,7 @@ Error generating stack: `+l.message+`
       mx = Math.max(...vals),\r
       mn = Math.min(...vals),\r
       rng = mx - mn || 1;\r
-    const showYAxisGuides = H >= 70;\r
+    const showYAxisGuides = H >= 65;\r
     const formatAxisValue = function (value) {\r
       const rounded =\r
         Math.abs(value - Math.round(value)) < 0.05\r
@@ -409,6 +409,14 @@ function barchart(vals, labels, H, col, unit) {\r
     const mx = Math.max(...vals) || 1,\r
       gap = 3,\r
       bw = Math.max(3, (W2 - gap * (vals.length + 1)) / vals.length);\r
+    const showYAxisGuides = H >= 65;\r
+    const formatAxisValue = function (value) {\r
+      const rounded =\r
+        Math.abs(value - Math.round(value)) < 0.05\r
+          ? Math.round(value)\r
+          : Math.round(value * 10) / 10;\r
+      return fmt(rounded) + unit;\r
+    };\r
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");\r
     svg.setAttribute("width", "100%");\r
     svg.setAttribute("height", H);\r
@@ -416,7 +424,40 @@ function barchart(vals, labels, H, col, unit) {\r
     svg.setAttribute("preserveAspectRatio", "none");\r
     svg.style.cssText = "display:block;width:100%;height:auto";\r
     const uid = "b" + Math.random().toString(36).slice(2, 5);\r
-    svg.innerHTML = \`<defs><linearGradient id="\${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="\${col}" stop-opacity="0.9"/><stop offset="100%" stop-color="\${col}" stop-opacity="0.35"/></linearGradient></defs>\`;\r
+    const guideMarkup = showYAxisGuides\r
+      ? [mx, mx / 2, 0]\r
+          .reduce(function (acc, value) {\r
+            const y = +(H - Math.max(2, (value / mx) * (H - 4))).toFixed(1);\r
+            if (\r
+              !acc.some(function (entry) {\r
+                return Math.abs(entry.y - y) < 8;\r
+              })\r
+            ) {\r
+              acc.push({ value, y });\r
+            }\r
+            return acc;\r
+          }, [])\r
+          .map(function (entry) {\r
+            return (\r
+              '<line x1="0" y1="' +\r
+              entry.y +\r
+              '" x2="' +\r
+              W2 +\r
+              '" y2="' +\r
+              entry.y +\r
+              '" stroke="#9cb6cf" stroke-width="1" stroke-dasharray="4,4" opacity="0.34"/>' +\r
+              '<text x="' +\r
+              +(W2 / 2).toFixed(1) +\r
+              '" y="' +\r
+              entry.y +\r
+              '" fill="#d7e5f4" font-size="9" font-weight="700" text-anchor="middle" dominant-baseline="middle" opacity="0.78" style="paint-order:stroke;stroke:#07111d;stroke-width:4;stroke-linejoin:round">' +\r
+              formatAxisValue(entry.value) +\r
+              "</text>"\r
+            );\r
+          })\r
+          .join("")\r
+      : "";\r
+    svg.innerHTML = \`<defs><linearGradient id="\${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="\${col}" stop-opacity="0.9"/><stop offset="100%" stop-color="\${col}" stop-opacity="0.35"/></linearGradient></defs>\${guideMarkup}\`;\r
     vals.forEach(function (v, i) {\r
       const bh = Math.max(2, (v / mx) * (H - 4)),\r
         x = gap + i * (bw + gap),\r
@@ -2960,20 +3001,20 @@ function barchart(vals, labels, H, col, unit) {\r
               color: diagnosisIndexedSeries.color,
             },
             {
-              label: "SEO \uBB38\uC81C \uD398\uC774\uC9C0",
-              value: fmt(diagnosisSeoSeries.current),
-              sub: diagnosisTopSeoCode
-                ? diagnosisTopSeoCode.label
-                : "\uC8FC\uC694 SEO \uBB38\uC81C \uC5C6\uC74C",
-              color: diagnosisSeoSeries.color,
-            },
-            {
               label: "\uC218\uC9D1\uC81C\uD55C \uD398\uC774\uC9C0",
               value: fmt(diagnosisRestrictedSeries.current),
               sub: diagnosisTopRestrictedCode
                 ? diagnosisTopRestrictedCode.label
                 : "\uC8FC\uC694 \uC81C\uD55C \uC5C6\uC74C",
               color: diagnosisRestrictedSeries.color,
+            },
+            {
+              label: "SEO \uBB38\uC81C \uD398\uC774\uC9C0",
+              value: fmt(diagnosisSeoSeries.current),
+              sub: diagnosisTopSeoCode
+                ? diagnosisTopSeoCode.label
+                : "\uC8FC\uC694 SEO \uBB38\uC81C \uC5C6\uC74C",
+              color: diagnosisSeoSeries.color,
             },
             {
               label: "\uC0C9\uC778 \uC81C\uC678 \uD398\uC774\uC9C0",
