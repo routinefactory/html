@@ -2571,6 +2571,11 @@ function barchart(vals, labels, H, col, unit) {\r
       earliestExposeDate && earliestExposeDate > windowStartDate
         ? earliestExposeDate
         : windowStartDate;
+    const detailEndDate = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const detailStartDate = new Date(Date.now() - 90 * 864e5)
+      .toISOString()
+      .slice(0, 10)
+      .replace(/-/g, "");
     const endDate = formatYmd(effectiveEndDate);
     const startDate = formatYmd(effectiveStartDate);
     inflightDetail[site] = (async function () {
@@ -2583,9 +2588,9 @@ function barchart(vals, labels, H, col, unit) {\r
               "?site=" +
               enc +
               "&start_date=" +
-              startDate +
+              detailStartDate +
               "&end_date=" +
-              endDate +
+              detailEndDate +
               "&isAlly=false&count=5",
             { credentials: "include", headers: { accept: "application/json" } },
           ),
@@ -2596,9 +2601,9 @@ function barchart(vals, labels, H, col, unit) {\r
               "?site=" +
               enc +
               "&start_date=" +
-              startDate +
+              detailStartDate +
               "&end_date=" +
-              endDate,
+              detailEndDate,
             { credentials: "include", headers: { accept: "application/json" } },
           ),
           fetch(
