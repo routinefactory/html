@@ -8,6 +8,10 @@ This path is isolated for temporary verification of the diagnosis meta tab and d
 
 See `searchadvisor/README.md` for the shared runtime rules, deployment split, and the diagnosis meta date-window rule.
 
+Stable checkpoint reference:
+
+- `searchadvisor/_tmp/diagnosis-meta-tab/CHECKPOINT.20260313-r36.md`
+
 Important direct-edit rule for this runtime:
 
 - keep `Ho(...)` patch anchors ASCII-only
