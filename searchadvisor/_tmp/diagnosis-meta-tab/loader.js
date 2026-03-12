@@ -1,6 +1,7 @@
 (function () {
   var base = "https://raw.githubusercontent.com/routinefactory/html/main/searchadvisor/_tmp/diagnosis-meta-tab";
-  var manifestUrl = base + "/latest.json";
+  var cacheBust = "ts=" + Date.now();
+  var manifestUrl = base + "/latest.json?" + cacheBust;
 
   function fail(err) {
     var msg = err && err.message ? err.message : String(err);
@@ -18,8 +19,8 @@
       }
       window.__SEARCHADVISOR_RUNTIME_VERSION__ = manifest.version || "unknown";
       window.__SEARCHADVISOR_RUNTIME_LOADED_AT__ = Date.now();
-      var version = manifest.version ? "?v=" + encodeURIComponent(manifest.version) : "";
-      return fetch(base + "/" + manifest.runtime + version, { cache: "no-store" });
+      var version = manifest.version ? "v=" + encodeURIComponent(manifest.version) + "&" : "";
+      return fetch(base + "/" + manifest.runtime + "?" + version + cacheBust, { cache: "no-store" });
     })
     .then(function (res) {
       if (!res.ok) throw new Error("runtime fetch failed: " + res.status);
