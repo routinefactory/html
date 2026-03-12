@@ -2586,11 +2586,7 @@ function barchart(vals, labels, H, col, unit) {\r
     window.__sadvR = R;
     renderTab(R);
     __sadvNotify();
-  }`),s=Ho(s,`    if (requestId !== siteViewReqId || site !== curSite) return;`,`    if (requestId !== siteViewReqId || site !== curSite || curMode !== "site") return;`),s=Ho(s,`    setAllSitesLabel();
-    const loading = document.createElement("div");`,`    setAllSitesLabel();
-    const loading = document.createElement("div");`),s=Ho(s,`    bdEl.innerHTML = "";
-    bdEl.appendChild(loading);`,`    bdEl.innerHTML = "";
-    bdEl.appendChild(loading);`),s=Ho(s,`          res.status === "fulfilled"
+  }`),s=Ho(s,`    if (requestId !== siteViewReqId || site !== curSite) return;`,`    if (requestId !== siteViewReqId || site !== curSite || curMode !== "site") return;`),s=Ho(s,`          res.status === "fulfilled"
             ? normalizeSiteData(res.value)
             : { expose: null, crawl: null, backlink: null, detailLoaded: false };`,`          res.status === "fulfilled"
             ? normalizeSiteData(res.value)

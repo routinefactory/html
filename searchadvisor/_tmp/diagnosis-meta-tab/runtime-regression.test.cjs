@@ -22,6 +22,17 @@ test("runtime does not keep half-warm shortcuts that bypass normal render flow",
   assert.doesNotMatch(runtime, /if \(!allWarm\)/);
 });
 
+test("runtime does not keep identity Ho patches for all-sites loading anchors", () => {
+  assert.doesNotMatch(
+    runtime,
+    /s=Ho\(s,`    setAllSitesLabel\(\);\r?\n    const loading = document\.createElement\("div"\);`,`    setAllSitesLabel\(\);\r?\n    const loading = document\.createElement\("div"\);`\)/,
+  );
+  assert.doesNotMatch(
+    runtime,
+    /s=Ho\(s,`    bdEl\.innerHTML = "";\r?\n    bdEl\.appendChild\(loading\);`,`    bdEl\.innerHTML = "";\r?\n    bdEl\.appendChild\(loading\);`\)/,
+  );
+});
+
 test("all-sites diagnosis index block patch is still present", () => {
   assert.match(runtime, /const indexBlock = document\.createElement\("div"\);/);
 });
