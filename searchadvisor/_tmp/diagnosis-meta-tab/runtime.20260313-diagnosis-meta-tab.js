@@ -2252,7 +2252,7 @@ Error generating stack: `+l.message+`
   }`),s=Ho(s,`    const R = buildRenderers(d.expose, d.crawl, d.backlink);
     window.__sadvR = R;
     renderTab(R);
-  }`,`    const R = buildRenderers(d.expose, d.crawl, d.backlink, d.diagnosisMeta);
+  }`,`    const R = buildRenderers(d.expose, d.crawl, d.backlink, d.diagnosisMeta, d.diagnosisMetaStatus, d.diagnosisMetaRange);
     window.__sadvR = R;
     renderTab(R);
     __sadvNotify();
@@ -2528,7 +2528,7 @@ Error generating stack: `+l.message+`
       a.timeStamp.localeCompare(b.timeStamp),
     );
     const blTopDomains = blData.topDomain || [];
-`,`  function buildRenderers(expose, crawlData, backlinkData, diagnosisMeta) {
+`,`  function buildRenderers(expose, crawlData, backlinkData, diagnosisMeta, diagnosisMetaStatus, diagnosisMetaRange) {
     const item = (expose && expose.items && expose.items[0]) || {};
     const period = item.period || {},
       rawLogs = item.logs || [],
