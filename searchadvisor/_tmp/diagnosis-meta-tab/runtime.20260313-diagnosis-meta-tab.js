@@ -384,11 +384,11 @@ Error generating stack: `+l.message+`
       c.setAttribute("opacity", "1");\r
       showTip(\r
         e,\r
-        "<span style="color:#7a9ab8;font-size:10px">" +\r
+        '<span style="color:#7a9ab8;font-size:10px">' +\r
           ((labels && labels[idx]) || "") +\r
-          "</span><br><b style="color:" +\r
+          '</span><br><b style="color:' +\r
           col +\r
-          "">" +\r
+          '">' +\r
           fmt(vals[idx]) +\r
           unit +\r
           "</b>",\r
