@@ -2365,7 +2365,13 @@ Error generating stack: `+l.message+`
     return inflightDetail[site];
   }`,`  async function fetchSiteData(site) {
     const baseData = await fetchExposeData(site);
-    if (baseData.detailLoaded && "diagnosisMeta" in baseData) return baseData;
+    if (
+      baseData.detailLoaded &&
+      "diagnosisMeta" in baseData &&
+      "diagnosisMetaStatus" in baseData &&
+      "diagnosisMetaRange" in baseData
+    )
+      return baseData;
     if (inflightDetail[site]) return inflightDetail[site];
     const enc = encodeURIComponent(site),
       base = "https://searchadvisor.naver.com/api-console/report";
