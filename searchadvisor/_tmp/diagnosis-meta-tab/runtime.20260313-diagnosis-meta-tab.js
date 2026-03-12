@@ -2237,7 +2237,20 @@ Error generating stack: `+l.message+`
       const host = document.getElementById("sadv-react-shell-host");
       const root = host && host.shadowRoot;
       const tabbar = root && root.querySelector('[data-sadvx="tabbar"] > div');
-      if (!tabbar) return;
+      if (!tabbar) {
+        if (!window.__sadvDiagnosisRetryTimer) {
+          window.__sadvDiagnosisRetryTimer = setTimeout(function () {
+            window.__sadvDiagnosisRetryTimer = null;
+            __sadvSyncReactDiagnosisTab(
+              snap ||
+                (window.__sadvApi && window.__sadvApi.getState
+                  ? window.__sadvApi.getState()
+                  : null),
+            );
+          }, 80);
+        }
+        return;
+      }
       let btn = root.querySelector('[data-sadvx-tab="diagnosis"]');
       if (!btn) {
         btn = document.createElement("button");
