@@ -877,6 +877,12 @@ function barchart(vals, labels, H, col, unit) {
   }
   async function renderSnapshotAllSites() {
     const requestId = ++allViewReqId;
+    const exportPayload =
+      typeof window !== "undefined" && window.__SEARCHADVISOR_EXPORT_PAYLOAD__
+        ? window.__SEARCHADVISOR_EXPORT_PAYLOAD__
+        : typeof EXPORT_PAYLOAD !== "undefined"
+          ? EXPORT_PAYLOAD
+          : null;
     setAllSitesLabel();
     bdEl.innerHTML =
       '<div style="padding:30px 20px;text-align:center;color:#3d5a78">Preparing all-sites snapshot...</div>';
@@ -886,8 +892,8 @@ function barchart(vals, labels, H, col, unit) {
       return;
     }
     let rows =
-      Array.isArray(EXPORT_PAYLOAD.summaryRows) && EXPORT_PAYLOAD.summaryRows.length
-        ? EXPORT_PAYLOAD.summaryRows.filter(function (row) {
+      exportPayload && Array.isArray(exportPayload.summaryRows) && exportPayload.summaryRows.length
+        ? exportPayload.summaryRows.filter(function (row) {
             return allSites.includes(row.site);
           })
         : null;
