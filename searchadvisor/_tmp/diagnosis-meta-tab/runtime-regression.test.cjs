@@ -122,13 +122,20 @@ test("runtime does not keep identity result patch anchors", () => {
   );
 });
 
-test("loader patches fetchSiteData and TABS via structural helpers", () => {
+test("loader patches fetchSiteData, tabs, renderTab, and loadSiteView via structural helpers", () => {
   assert.match(runtime, /function patchLegacyFetchSiteData\(a\)\{/);
   assert.match(runtime, /function patchLegacyTabs\(a\)\{/);
+  assert.match(runtime, /function patchLegacyRenderTab\(a\)\{/);
+  assert.match(runtime, /function patchLegacyLoadSiteView\(a\)\{/);
   assert.match(runtime, /eA\(a,\["  async function fetchSiteData\(site\) \{"/);
   assert.match(runtime, /eA\(a,\["  const TABS = \[","  let TABS = \[","  var TABS = \["\],s,"\[","\]","TABS"\)/);
+  assert.match(runtime, /eA\(a,\["  function renderTab\(R\) \{"/);
+  assert.match(runtime, /eA\(a,\["  async function loadSiteView\(site\) \{"/);
   assert.match(runtime, /function patchLegacyBuildRenderers\(a\)\{/);
-  assert.match(runtime, /s=patchLegacyFetchSiteData\(s\),s=patchLegacyTabs\(s\),s=patchLegacyBuildRenderers\(s\),s=Ho\(s,`    bdEl\.innerHTML =/);
+  assert.match(
+    runtime,
+    /s=patchLegacyRenderTab\(s\),s=patchLegacyNormalizeSiteData\(s\),s=patchLegacyFetchSiteData\(s\),s=patchLegacyTabs\(s\),s=patchLegacyLoadSiteView\(s\),s=patchLegacyBuildRenderers\(s\),s=Ho\(s,`    bdEl\.innerHTML =/,
+  );
   assert.doesNotMatch(
     runtime,
     /s=Ho\(s,`  async function fetchSiteData\(site\) \{/,
@@ -144,6 +151,14 @@ test("loader patches fetchSiteData and TABS via structural helpers", () => {
   assert.doesNotMatch(
     runtime,
     /s=Ho\(s,`      insight: function \(\) \{/,
+  );
+  assert.doesNotMatch(
+    runtime,
+    /s=Ho\(s,`    const R = buildRenderers\(d\.expose, d\.crawl, d\.backlink\);/,
+  );
+  assert.doesNotMatch(
+    runtime,
+    /s=Ho\(s,`    if \(requestId !== siteViewReqId \|\| site !== curSite\) return;`/,
   );
 });
 
@@ -255,6 +270,21 @@ test("diagnosis meta follows the same cache-aware retry policy during export", (
 test("site picker does not reload the same site twice in a row", () => {
   assert.match(runtime, /const sameSite = curSite === site;/);
   assert.match(runtime, /if \(curMode === "site" && !sameSite\) loadSiteView\(site\);/);
+});
+
+test("site view clears stale renderer state and missing tabs render a safe placeholder", () => {
+  assert.match(runtime, /window\.__sadvR = null;/);
+  assert.match(
+    runtime,
+    /if \(!R \|\| typeof R\[curTab\] !== "function"\) \{/,
+  );
+  assert.match(runtime, /Tab data unavailable/);
+  assert.match(runtime, /Loading site data\.\.\./);
+  assert.match(runtime, /No site data available/);
+  assert.match(
+    runtime,
+    /if \(requestId !== siteViewReqId \|\| site !== curSite \|\| curMode !== "site"\) return;/,
+  );
 });
 
 test("legacy runtime uses merge-aware labels in site detail selection", () => {
