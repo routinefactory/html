@@ -8,6 +8,19 @@ const runtimePath = path.join(
   "runtime.20260313-diagnosis-meta-tab.js",
 );
 const runtime = fs.readFileSync(runtimePath, "utf8");
+const nSStart = runtime.indexOf("const nS=`");
+const nSEnd = runtime.indexOf(",lS=", nSStart);
+const hoStart = runtime.indexOf("function Ho(", nSEnd);
+const oSStart = runtime.indexOf("function oS()", hoStart);
+const transformedRuntime =
+  nSStart >= 0 && nSEnd >= 0 && hoStart >= 0 && oSStart >= 0
+    ? new Function(
+        runtime.slice(nSStart, nSEnd) +
+          ";\n" +
+          runtime.slice(hoStart, oSStart) +
+          "\nreturn iS(nS);",
+      )()
+    : "";
 
 test("site view render guard blocks stale responses after mode switch", () => {
   assert.match(
@@ -163,26 +176,46 @@ test("loader patches fetchSiteData, tabs, renderTab, and loadSiteView via struct
 });
 
 test("loader transform executes successfully against embedded legacy source", () => {
-  const nSStart = runtime.indexOf("const nS=`");
-  const nSEnd = runtime.indexOf(",lS=", nSStart);
-  const hoStart = runtime.indexOf("function Ho(", nSEnd);
-  const oSStart = runtime.indexOf("function oS()", hoStart);
   assert.notEqual(nSStart, -1);
   assert.notEqual(nSEnd, -1);
   assert.notEqual(hoStart, -1);
   assert.notEqual(oSStart, -1);
-  const evalCode =
-    runtime.slice(nSStart, nSEnd) +
-    ";\n" +
-    runtime.slice(hoStart, oSStart) +
-    "\nreturn iS(nS);";
-  const transformed = new Function(evalCode)();
   assert.match(
-    transformed,
+    transformedRuntime,
     /function buildRenderers\(expose, crawlData, backlinkData, diagnosisMeta, diagnosisMetaStatus, diagnosisMetaRange\) \{/,
   );
-  assert.match(transformed, /diagnosis: function \(\) \{/);
-  assert.doesNotThrow(() => new Function(transformed));
+  assert.match(transformedRuntime, /diagnosis: function \(\) \{/);
+  assert.doesNotThrow(() => new Function(transformedRuntime));
+});
+
+test("transformed runtime preserves all-sites diagnosis cards in executed code", () => {
+  assert.match(
+    transformedRuntime,
+    /fetchDiagnosisMeta\(site, siteDataBySite\[site\] \|\| null\)/,
+  );
+  assert.match(
+    transformedRuntime,
+    /const allCardColors = \[C\.green, C\.blue, C\.amber, C\.teal, C\.purple\];/,
+  );
+  assert.match(
+    transformedRuntime,
+    /const indexMini = sparkline\([\s\S]*?r\.diagnosisIndexedDates,\s*42,\s*col,/,
+  );
+  assert.match(
+    transformedRuntime,
+    /metricGrid\.style\.gridTemplateColumns = "repeat\(3,minmax\(0,1fr\)\)";/,
+  );
+});
+
+test("transformed runtime passes diagnosis meta into live site renderers", () => {
+  assert.match(
+    transformedRuntime,
+    /const R = buildRenderers\(d\.expose, d\.crawl, d\.backlink, d\.diagnosisMeta, d\.diagnosisMetaStatus, d\.diagnosisMetaRange\);/,
+  );
+  assert.match(
+    transformedRuntime,
+    /if \(requestId !== siteViewReqId \|\| site !== curSite \|\| curMode !== "site"\) return;/,
+  );
 });
 
 test("saved tmp html exposes merge-aware export hooks", () => {
