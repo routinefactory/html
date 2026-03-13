@@ -400,23 +400,60 @@ test("saved tmp html export scripts preserve escaped site regex literals", () =>
 test("saved tmp html direct save forces refresh and merges snapshot meta fallback", () => {
   assert.match(
     runtime,
-    /if\(s\.refreshMode==null&&!!window\.__SEARCHADVISOR_DIRECT_SAVE__\)s\.refreshMode="refresh";/,
+    /if\(s\.refreshMode==null\)s\.refreshMode="refresh";/,
   );
   assert.match(
     runtime,
     /const M=\{\.\.\.T,siteMeta:T\.siteMeta\|\|E\.siteMeta\|\|\{\},mergedMeta:T\.mergedMeta\|\|E\.mergedMeta\|\|null\};/,
   );
-  assert.match(runtime, /setSnapshotMetaState\(M\);/);
   assert.match(runtime, /const O=a\.buildLegacySnapshotHtml\(S,M\);/);
+  assert.doesNotMatch(runtime, /setSnapshotMetaState\(M\);/);
+  assert.doesNotMatch(runtime, /fS\.renderToStaticMarkup\(Y\.jsx\(wS,/);
+  assert.doesNotMatch(runtime, /U=U\.replace\('<div id="sadv-react-shell-root">/);
+  assert.doesNotMatch(runtime, /U=U\.replace\('<div id="sadv-bd">',`<div id="sadv-react-shell-root">/);
+  assert.doesNotMatch(runtime, /U=U\.replace\("<\/body>",`<script>\$\{gS\(SS\(\)\)\}<\\\/script><\/body>`\)/);
+});
+
+test("both visible and direct HTML save paths now use refresh semantics", () => {
   assert.match(
     runtime,
-    /state:\{\.\.\.E,curMode:M\.curMode,curSite:M\.curSite,curTab:M\.curTab,allSites:M\.allSites,siteMeta:M\.siteMeta,mergedMeta:M\.mergedMeta\}/,
+    /const payload = await collectExportData\([\s\S]*btn\.textContent = done \+ "\/" \+ total;[\s\S]*\{ refreshMode: "refresh" \}[\s\S]*\);/,
+  );
+  assert.match(
+    runtime,
+    /if\(s\.refreshMode==null\)s\.refreshMode="refresh";/,
+  );
+  assert.match(
+    runtime,
+    /\},\{refreshMode:s\.refreshMode==="refresh"\?"refresh":"cache-first"\}\);/,
   );
 });
 
 test("saved tmp html bootstrap initializes both site and all-sites request guards", () => {
   assert.match(runtime, /let siteViewReqId = 0;/);
   assert.match(runtime, /let allViewReqId = 0;/);
+});
+
+test("live runtime routes manual refresh through a shared full-refresh pipeline", () => {
+  assert.match(runtime, /async function runFullRefreshPipeline\(options = \{\}\) \{/);
+  assert.match(
+    runtime,
+    /await collectExportData\([\s\S]*\{ refreshMode: "refresh" \}/,
+  );
+  assert.match(
+    runtime,
+    /document[\s\S]*getElementById\("sadv-refresh-btn"\)[\s\S]*await runFullRefreshPipeline\(\{ trigger: "manual", button: btn \}\);/,
+  );
+});
+
+test("live runtime bootstraps the same full-refresh pipeline when cache is expired", () => {
+  assert.match(runtime, /function getSiteListCacheStamp\(\) \{/);
+  assert.match(runtime, /function getSiteDataCacheStamp\(site\) \{/);
+  assert.match(runtime, /function shouldBootstrapFullRefresh\(\) \{/);
+  assert.match(
+    runtime,
+    /if \(shouldBootstrapFullRefresh\(\)\) \{[\s\S]*await runFullRefreshPipeline\(\{ trigger: "cache-expiry" \}\);[\s\S]*\}/,
+  );
 });
 
 test("saved tmp html uses dedicated offline all-sites renderer", () => {
@@ -432,7 +469,6 @@ test("saved tmp html uses dedicated offline all-sites renderer", () => {
     /exportPayload && Array\.isArray\(exportPayload\.summaryRows\) && exportPayload\.summaryRows\.length/,
   );
   assert.match(runtime, /if \(mode === "all"\) \{[\s\S]*renderSnapshotAllSites\(\);/);
-  assert.match(runtime, /if \(curMode === "all"\) await renderSnapshotAllSites\(\);/);
 });
 
 test("legacy normalize patch preserves field-level cache metadata", () => {

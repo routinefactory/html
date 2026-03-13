@@ -200,6 +200,8 @@ Error generating stack: `+l.message+`
   const UI_STATE_LS_KEY = "sadv_ui_state_v1";
   const DATA_TTL = 12 * 60 * 60 * 1000;
   const ALL_SITES_BATCH = 4;
+  const FULL_REFRESH_BATCH_SIZE = 1;
+  const FULL_REFRESH_SITE_DELAY_MS = 180;
   let TIP = null;
   function tip() {
     if (!TIP) {
@@ -825,7 +827,7 @@ function barchart(vals, labels, H, col, unit) {
   async function collectExportData(onProgress, options) {
     const dataBySite = {};
     const summaryRows = [];
-    const batchSize = 3;
+    const batchSize = FULL_REFRESH_BATCH_SIZE;
     const refreshMode = options && options.refreshMode === "refresh" ? "refresh" : "cache-first";
     await ensureExportSiteList(refreshMode);
     const total = allSites.length;
@@ -848,6 +850,11 @@ function barchart(vals, labels, H, col, unit) {
         done++;
         if (onProgress) onProgress(done, total, site);
       });
+      if (refreshMode === "refresh" && i + batchSize < allSites.length) {
+        await new Promise(function (resolve) {
+          setTimeout(resolve, FULL_REFRESH_SITE_DELAY_MS);
+        });
+      }
     }
     summaryRows.sort((a, b) => b.totalC - a.totalC);
     return {
@@ -861,6 +868,80 @@ function barchart(vals, labels, H, col, unit) {
       siteMeta: typeof getSiteMetaMap === "function" ? getSiteMetaMap() : {},
       mergedMeta: typeof getMergedMetaState === "function" ? getMergedMetaState() : null,
     };
+  }
+  function renderFullRefreshProgress(label, detail, progress) {
+    const ratio =
+      typeof progress === "number" && isFinite(progress)
+        ? Math.max(0.06, Math.min(1, progress))
+        : 0.06;
+    bdEl.innerHTML =
+      '<div style="padding:24px 18px 20px;color:#7a9ab8;text-align:left;line-height:1.6">' +
+      '<div style="font-size:13px;font-weight:700;color:#d4ecff;margin-bottom:8px">' +
+      label +
+      "</div>" +
+      '<div style="font-size:11px;margin-bottom:10px">' +
+      (detail || "") +
+      "</div>" +
+      '<div style="height:10px;border-radius:999px;background:#0d1829;border:1px solid #1a2d45;overflow:hidden">' +
+      '<div style="width:' +
+      Math.round(ratio * 100) +
+      '%;height:100%;background:linear-gradient(90deg,#40c4ff,#00e676)"></div>' +
+      "</div>" +
+      "</div>";
+  }
+  function shouldBootstrapFullRefresh() {
+    if (!allSites.length) return false;
+    const now = Date.now();
+    const siteListTs = getSiteListCacheStamp();
+    if (!(typeof siteListTs === "number") || now - siteListTs >= DATA_TTL) return true;
+    return allSites.some(function (site) {
+      const siteTs = getSiteDataCacheStamp(site);
+      return !(typeof siteTs === "number") || now - siteTs >= DATA_TTL;
+    });
+  }
+  async function runFullRefreshPipeline(options = {}) {
+    const trigger = options && options.trigger ? options.trigger : "manual";
+    const triggerLabel =
+      trigger === "cache-expiry"
+        ? "캐시가 만료되어 전체 데이터를 다시 수집하고 있어요."
+        : "전체 데이터를 다시 수집하고 있어요.";
+    const triggerDetail =
+      trigger === "cache-expiry"
+        ? "전체현황과 사이트별 상세탭을 모두 최신 상태로 맞추는 중입니다."
+        : "사이트 목록부터 expose, diagnosisMeta, crawl, backlink까지 순서대로 갱신합니다.";
+    renderFullRefreshProgress(triggerLabel, triggerDetail, 0);
+    labelEl.innerHTML = "<span>전체 재수집 진행 중</span>";
+    const btn = options && options.button ? options.button : null;
+    const payload = await collectExportData(
+      function (done, total, site) {
+        const safeTotal = Math.max(1, total);
+        const shortSite = site
+          ? site.replace("https://", "").replace("http://", "")
+          : "";
+        const detail =
+          done +
+          " / " +
+          safeTotal +
+          " 사이트 처리 중" +
+          (shortSite ? " · " + shortSite : "");
+        renderFullRefreshProgress(triggerLabel, detail, done / safeTotal);
+        if (btn) btn.textContent = done + "/" + safeTotal;
+      },
+      { refreshMode: "refresh" },
+    );
+    window.__sadvRows = payload.summaryRows;
+    buildCombo(payload.summaryRows);
+    assignColors();
+    ensureCurrentSite();
+    if (curSite) setComboSite(curSite);
+    if (curMode === "site" && curSite) {
+      await loadSiteView(curSite);
+    } else {
+      setAllSitesLabel();
+      await renderAllSites();
+    }
+    setCachedUiState();
+    return payload;
   }
   function savedAtIso(d) {
     return (
@@ -1443,9 +1524,12 @@ function barchart(vals, labels, H, col, unit) {
     btn.textContent = "0/" + allSites.length;
     try {
       const savedAt = new Date();
-      const payload = await collectExportData(function (done, total) {
-        btn.textContent = done + "/" + total;
-      });
+      const payload = await collectExportData(
+        function (done, total) {
+          btn.textContent = done + "/" + total;
+        },
+        { refreshMode: "refresh" },
+      );
       const html = buildSnapshotHtml(savedAt, payload);
       const fileName =
         "searchadvisor-" +
@@ -1571,6 +1655,14 @@ function barchart(vals, labels, H, col, unit) {
   }
   function getSiteDataCacheKey(site) {
     return DATA_LS_PREFIX + getCacheNamespace() + "_" + btoa(site).replace(/=/g, "");
+  }
+  function getSiteListCacheStamp() {
+    const cached = lsGet(getSiteListCacheKey());
+    return cached && typeof cached.ts === "number" ? cached.ts : null;
+  }
+  function getSiteDataCacheStamp(site) {
+    const cached = lsGet(getSiteDataCacheKey(site));
+    return cached && typeof cached.ts === "number" ? cached.ts : null;
   }
   function getUiStateCacheKey() {
     return UI_STATE_LS_KEY + "_" + getCacheNamespace();
@@ -2269,26 +2361,13 @@ function barchart(vals, labels, H, col, unit) {
     .getElementById("sadv-refresh-btn")
     .addEventListener("click", async function () {
       const btn = this;
+      const originalText = btn.textContent;
       btn.classList.add("spinning");
       try {
-        await loadSiteList(true);
-        assignColors();
-        ensureCurrentSite();
-        if (curMode === "all") {
-          allSites.forEach(function (site) {
-            delete memCache[site];
-            clearCachedData(site);
-          });
-        } else if (curSite) {
-          delete memCache[curSite];
-          clearCachedData(curSite);
-        }
-        buildCombo(window.__sadvRows || null);
-        if (curMode === "all") await renderSnapshotAllSites();
-        else if (curSite) await loadSiteView(curSite);
-        if (curMode === "all") setAllSitesLabel();
+        await runFullRefreshPipeline({ trigger: "manual", button: btn });
       } finally {
         btn.classList.remove("spinning");
+        btn.textContent = originalText;
       }
     });
   document
@@ -3213,6 +3292,9 @@ function barchart(vals, labels, H, col, unit) {
   await loadSiteList(false);
   assignColors();
   const cachedUiState = getCachedUiState();
+  if (shouldBootstrapFullRefresh()) {
+    await runFullRefreshPipeline({ trigger: "cache-expiry" });
+  }
   let bootMode = "all";
   let bootSite = null;
   const curSiteMatch = location.search.match(/site=([^&]+)/);
@@ -4036,7 +4118,7 @@ Error generating stack: `+C.message+`
   syncShell();
 })();`}async function k0(a,s={}){
 const f=document.getElementById("sadv-save-btn"),v=f?.textContent||"HTML",p=S=>{s.onStatus?.(S)};
-if(s.refreshMode==null&&!!window.__SEARCHADVISOR_DIRECT_SAVE__)s.refreshMode="refresh";
+if(s.refreshMode==null)s.refreshMode="refresh";
 f&&(f.disabled=!0,f.textContent="0/"+a.getState().allSites.length);
 try{
   p({label:"HTML snapshot preparing",detail:"Collecting site detail data.",progress:0,tone:"info"});
@@ -4047,38 +4129,7 @@ try{
   p({label:"HTML file building",detail:"Serializing the current state into a standalone HTML file.",progress:1,tone:"info"});
   const O=a.buildLegacySnapshotHtml(S,M);
   if(!O.includes('<div id="sadv-bd">'))throw new Error("snapshot panel not found");
-  const k=`${(document.getElementById("sadv-react-style")||document.getElementById("sadv-react-style-shadow"))?.textContent||""}
-#sadv-header,
-#sadv-site-bar,
-#sadv-tabs {
-  display: none !important;
-}
-#sadv-p,
-#sadv-react-shell-root,
-.sadvx-shell {
-  overflow: visible !important;
-}
-#sadv-react-shell-root {
-  contain: none !important;
-  isolation: auto !important;
-  position: relative !important;
-  z-index: 20 !important;
-}
-.sadvx-shell,
-[data-sadvx="site-section"] {
-  position: relative !important;
-  z-index: 21 !important;
-}
-[data-sadvx="site-panel"] {
-  z-index: 10000002 !important;
-}`;
-  setSnapshotMetaState(M);
-  const L=fS.renderToStaticMarkup(Y.jsx(wS,{state:{...E,curMode:M.curMode,curSite:M.curSite,curTab:M.curTab,allSites:M.allSites,siteMeta:M.siteMeta,mergedMeta:M.mergedMeta},rows:M.summaryRows}));
-  let U=O;
-  U=U.replace("</head>",`<style id="sadv-react-style">${vS(k)}</style></head>`);
-  U=U.replace('<div id="sadv-bd">',`<div id="sadv-react-shell-root">${L}</div><div id="sadv-bd">`);
-  U=U.replace("</body>",`<script>${gS(SS())}<\/script></body>`);
-  const K=`searchadvisor-${yS(E.accountLabel)}-${bS(S)}.html`,Z=new Blob([U],{type:"text/html;charset=utf-8"}),$=document.createElement("a");
+  const K=`searchadvisor-${yS(E.accountLabel)}-${bS(S)}.html`,Z=new Blob([O],{type:"text/html;charset=utf-8"}),$=document.createElement("a");
   $.href=URL.createObjectURL(Z),$.download=K,document.body.appendChild($),$.click(),$.remove(),p({label:"HTML download complete",detail:K,progress:1,tone:"success"}),setTimeout(()=>{URL.revokeObjectURL($.href)},1e3);
 }catch(S){
   console.error(S),p({label:"HTML download failed",detail:S instanceof Error?S.message:"Unknown error",progress:null,tone:"error"}),alert("HTML export failed. Please try again.");
