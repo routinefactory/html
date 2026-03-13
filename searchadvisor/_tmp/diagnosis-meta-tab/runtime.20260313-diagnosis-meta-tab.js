@@ -4328,7 +4328,17 @@ function LS(){
     '      mount.id = "sadv-react-shell-root";',
     "      host.insertBefore(mount, portal);",
     "    }",
+    "    const previousUnmount = window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;",
+    '    if (typeof previousUnmount === "function") {',
+    "      try { previousUnmount(); } catch (_) {}",
+    "    }",
     "    const root = Sy.createRoot(mount);",
+    "    window.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__ = root;",
+    "    window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__ = function () {",
+    "      try { root.unmount(); } catch (_) {}",
+    "      if (window.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__ === root) delete window.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__;",
+    "      delete window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;",
+    "    };",
     '    root.render(Y.jsx(H.StrictMode, { children: Y.jsx(tS, { api: snapshotApi, portalContainer: portal }) }));',
     "    return;",
     "  }",
@@ -4457,7 +4467,23 @@ function LS(){
   ].join("\\n")
 }
 function kS(a,s){
-  return injectSnapshotReactShell(a,s)
+  if(!a.includes('<div id="sadv-bd">'))throw new Error("snapshot panel not found");
+  const f=vS(document.getElementById("sadv-react-style")?.textContent||"");
+  const v=q0(s);
+  a=a.replace(
+    "</head>",
+    `<style id="sadv-react-style">${f}</style><style id="sadv-snapshot-shell-hide">#sadv-header,#sadv-mode-bar,#sadv-site-bar,#sadv-tabs{display:none !important}#sadv-react-shell-host{display:block !important;width:100% !important;flex-shrink:0}</style></head>`
+  );
+  a=a.replace(
+    "<body>",
+    `<body><script>window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=${JSON.stringify(v)};<\/script>`
+  );
+  a=a.replace('<div id="sadv-bd">','<div id="sadv-react-shell-host"></div><div id="sadv-bd">');
+  a=a.replace(
+    "</body>",
+    `<script>${gS(LS())}<\/script></body>`
+  );
+  return a
 }
 let Qh=null;function oS(){Qh||(Qh=iS(nS)),new Function(Qh)();const a=window.__sadvApi;return a?{getState:()=>_0(a.getState()),isReady:()=>!!a.isReady?.(),waitUntilReady:s=>a.waitUntilReady?a.waitUntilReady(s):Promise.resolve(!0),subscribe:s=>a.subscribe(f=>{s(_0(f))}),switchMode:a.switchMode,setSite:a.setSite,setTab:a.setTab,refresh:a.refresh,download:a.download,exportSnapshotData:a.exportSnapshotData,buildLegacySnapshotHtml:(s,f)=>kS(a.buildLegacySnapshotHtml(s,f),f),close:a.close}:null}var eu={},Ps={};/**
  * @license React

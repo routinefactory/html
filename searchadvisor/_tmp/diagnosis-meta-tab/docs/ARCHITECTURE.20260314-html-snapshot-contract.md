@@ -189,6 +189,9 @@ Corollary:
 - `buildSnapshotHtml()` should expose a stable payload contract and a direct snapshot API
 - it may temporarily preserve snapshot-local body renderers while those renderers continue to read payload state directly
 - it should not remain the permanent owner of alternate interaction semantics for top-level shell controls
+- any generated wrapper that is embedded into a transformed or minified runtime must stay self-contained
+- a generated export wrapper must not call outer-scope helper names that do not exist inside the generated runtime scope
+- if a helper is required inside transformed runtime code, it must either be inlined into that generated scope or attached through an explicit stable global contract
 
 ### Rule 4. Merged HTML is just another payload source
 

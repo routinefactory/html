@@ -443,7 +443,36 @@ test("saved tmp html mounts the live react shell from a direct snapshot api in a
     runtime,
     /querySelectorAll\(\s*'#sadv-react-shell-host,#sadv-react-shell-root,#sadv-react-portal-root,\[data-sadvx="snapshot-shell"\],\[data-sadvx-action="top"\]'/,
   );
-  assert.match(transformedRuntime, /return html;/);
+  assert.match(transformedRuntime, /const snapshotApi = window\.__SEARCHADVISOR_SNAPSHOT_API__ \|\| null;/);
+  assert.match(transformedRuntime, /const previousUnmount = window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;/);
+  assert.match(transformedRuntime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__ = root;/);
+  assert.match(transformedRuntime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__ = function \(\) \{/);
+});
+
+test("saved-html export wrapper stays self-contained at the wrapper boundary", () => {
+  assert.match(runtime, /function kS\(a,s\)\{/);
+  assert.doesNotMatch(runtime, /return injectSnapshotReactShell\(a,s\)/);
+  assert.ok(
+    runtime.includes(
+      'a=a.replace(\r\n    "<body>",\r\n    `<body><script>window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=${JSON.stringify(v)};<\\/script>`',
+    ) ||
+      runtime.includes(
+        'a=a.replace(\n    "<body>",\n    `<body><script>window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=${JSON.stringify(v)};<\\/script>`',
+      ),
+  );
+  assert.ok(
+    runtime.includes(
+      `a=a.replace('<div id="sadv-bd">','<div id="sadv-react-shell-host"></div><div id="sadv-bd">');`,
+    ),
+  );
+  assert.ok(
+    runtime.includes(
+      'a=a.replace(\r\n    "</body>",\r\n    `<script>${gS(LS())}<\\/script></body>`',
+    ) ||
+      runtime.includes(
+        'a=a.replace(\n    "</body>",\n    `<script>${gS(LS())}<\\/script></body>`',
+      ),
+  );
 });
 
 test("both visible and direct HTML save paths now use refresh semantics", () => {
