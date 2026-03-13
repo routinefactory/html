@@ -1771,7 +1771,7 @@ function barchart(vals, labels, H, col, unit) {
   function getSiteShortName(a) {
     const meta = a ? getSiteMetaMap()[a] || null : null;
     const label = meta ? (meta.displayLabel || meta.label || meta.shortName || "").trim() : "";
-    return label || (a ? a.replace(/^https?:\\\\/\\\\//, "") : "사이트 선택");
+    return label || (a ? a.replace(/^https?:\\/\\//, "") : "사이트 선택");
   }
   function getSiteLabel(a) {
     if (!a) return "사이트 선택";

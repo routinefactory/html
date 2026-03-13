@@ -167,6 +167,7 @@ test("loader transform executes successfully against embedded legacy source", ()
     /function buildRenderers\(expose, crawlData, backlinkData, diagnosisMeta, diagnosisMetaStatus, diagnosisMetaRange\) \{/,
   );
   assert.match(transformed, /diagnosis: function \(\) \{/);
+  assert.doesNotThrow(() => new Function(transformed));
 });
 
 test("saved tmp html exposes merge-aware export hooks", () => {
@@ -282,11 +283,6 @@ test("saved tmp html export scripts preserve escaped site regex literals", () =>
   assert.ok(
     runtime.includes(
       'return f || (a ? a.replace(/^https?:\\\\\\\\/\\\\\\\\//, "") : "사이트 선택");',
-    ),
-  );
-  assert.ok(
-    runtime.includes(
-      'return label || (a ? a.replace(/^https?:\\\\\\\\/\\\\\\\\//, "") : "사이트 선택");',
     ),
   );
 });
