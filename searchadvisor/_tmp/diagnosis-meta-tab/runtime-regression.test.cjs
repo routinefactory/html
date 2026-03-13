@@ -253,6 +253,11 @@ test("legacy runtime uses merge-aware labels in site detail selection", () => {
 test("saved tmp html uses shell-local merge-aware label matching", () => {
   assert.match(runtime, /function shellGetSiteShortName\(site\) \{/);
   assert.match(runtime, /function shellGetSiteLabel\(site\) \{/);
+  assert.ok(
+    runtime.includes(
+      'return label || (site ? site.replace(/^https?:\\\\\\/\\\\\\//, "") : "site");',
+    ),
+  );
   assert.match(
     runtime,
     /button\.dataset\.active = shellGetSiteLabel\(site\) === activeSite \|\| shellGetSiteShortName\(site\) === activeSite \? 'true' : 'false';/,
@@ -271,6 +276,19 @@ test("saved tmp html can fall back to direct site and tab activation", () => {
   assert.match(runtime, /function activateTab\(tab\) \{/);
   assert.match(runtime, /if \(afterTab !== tab && typeof setTab === 'function'\) \{/);
   assert.match(runtime, /setTab\(tab\);/);
+});
+
+test("saved tmp html export scripts preserve escaped site regex literals", () => {
+  assert.ok(
+    runtime.includes(
+      'return f || (a ? a.replace(/^https?:\\\\\\\\/\\\\\\\\//, "") : "사이트 선택");',
+    ),
+  );
+  assert.ok(
+    runtime.includes(
+      'return label || (a ? a.replace(/^https?:\\\\\\\\/\\\\\\\\//, "") : "사이트 선택");',
+    ),
+  );
 });
 
 test("saved tmp html direct save forces refresh and merges snapshot meta fallback", () => {

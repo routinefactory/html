@@ -1007,7 +1007,7 @@ function barchart(vals, labels, H, col, unit) {
     function getSiteShortName(a) {
       const s = a ? SITE_META_MAP[a] || null : null;
       const f = s ? (s.displayLabel || s.label || s.shortName || "").trim() : "";
-      return f || (a ? a.replace(/^https?:\\/\\//, "") : "사이트 선택");
+      return f || (a ? a.replace(/^https?:\\\\/\\\\//, "") : "사이트 선택");
     }
     function getSiteLabel(a) {
       if (!a) return "사이트 선택";
@@ -1771,7 +1771,7 @@ function barchart(vals, labels, H, col, unit) {
   function getSiteShortName(a) {
     const meta = a ? getSiteMetaMap()[a] || null : null;
     const label = meta ? (meta.displayLabel || meta.label || meta.shortName || "").trim() : "";
-    return label || (a ? a.replace(/^https?:\\/\\//, "") : "사이트 선택");
+    return label || (a ? a.replace(/^https?:\\\\/\\\\//, "") : "사이트 선택");
   }
   function getSiteLabel(a) {
     if (!a) return "사이트 선택";
@@ -3208,7 +3208,7 @@ Error generating stack: `+C.message+`
     const metaMap = snapshotShellMetaState && snapshotShellMetaState.siteMeta ? snapshotShellMetaState.siteMeta : {};
     const meta = site ? metaMap[site] || null : null;
     const label = meta ? (meta.displayLabel || meta.label || meta.shortName || "").trim() : "";
-    return label || (site ? site.replace(/^https?:\/\//, "") : "site");
+    return label || (site ? site.replace(/^https?:\\\/\\\//, "") : "site");
   }
   function shellGetSiteLabel(site) {
     if (!site) return "site";
