@@ -1100,6 +1100,69 @@ function barchart(vals, labels, H, col, unit) {
     bdEl.scrollTop = 0;
     __sadvNotify();
   }
+  function buildSnapshotShellState(payload) {
+    const allSites = Array.isArray(payload.allSites) ? payload.allSites.slice() : [];
+    const cacheSavedAtValues = allSites
+      .map(function (site) {
+        const dataBySite = payload.dataBySite && payload.dataBySite[site];
+        return dataBySite && typeof dataBySite.__cacheSavedAt === "number"
+          ? dataBySite.__cacheSavedAt
+          : null;
+      })
+      .filter(function (value) {
+        return typeof value === "number";
+      });
+    const savedAtValue =
+      payload.savedAt && !Number.isNaN(new Date(payload.savedAt).getTime())
+        ? new Date(payload.savedAt)
+        : null;
+    const updatedAt = cacheSavedAtValues.length
+      ? new Date(Math.max.apply(null, cacheSavedAtValues))
+      : savedAtValue;
+    return {
+      accountLabel: payload.accountLabel || "",
+      allSites,
+      curMode: payload.curMode === "site" ? "site" : "all",
+      curSite:
+        typeof payload.curSite === "string"
+          ? payload.curSite
+          : allSites[0] || null,
+      curTab: TABS.some(function (tab) {
+        return tab.id === payload.curTab;
+      })
+        ? payload.curTab
+        : "overview",
+      runtimeVersion: window.__SEARCHADVISOR_RUNTIME_VERSION__ || "snapshot",
+      cacheMeta: updatedAt
+        ? {
+            label: "snapshot",
+            updatedAt,
+            remainingMs: null,
+            sourceCount: allSites.length,
+            measuredAt: Date.now(),
+          }
+        : null,
+    };
+  }
+  function injectSnapshotReactShell(html, payload) {
+    if (!html.includes('<div id="sadv-bd">')) {
+      throw new Error("snapshot panel not found");
+    }
+    const reactShellCss = vS(document.getElementById("sadv-react-style")?.textContent || "");
+    const shellState = buildSnapshotShellState(payload);
+    const reactShellMarkup = fS.renderToStaticMarkup(Y.jsx(wS,{state:buildSnapshotShellState(payload),rows:payload.summaryRows||[]}));
+    html = html.replace(
+      "</head>",
+      \`<style id="sadv-react-style">\${reactShellCss}</style><style id="sadv-snapshot-shell-hide">#sadv-header,#sadv-mode-bar,#sadv-site-bar,#sadv-tabs{display:none !important}#sadv-react-shell-root{display:block;width:100%;flex-shrink:0}</style></head>\`,
+    );
+    html = html.replace(
+      "<body>",
+      \`<body><script>window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=\${JSON.stringify(shellState)};<\/script>\`,
+    );
+    html = html.replace('<div id="sadv-bd">', \`<div id="sadv-react-shell-root">\${reactShellMarkup}</div><div id="sadv-bd">\`);
+    html = html.replace("</body>", \`<script>\${gS(SS())}<\/script></body>\`);
+    return html;
+  }
   function buildSnapshotHtml(savedAt, payload) {
     const clone = p.cloneNode(true);
     clone.style.setProperty("display", "flex");
@@ -1142,7 +1205,7 @@ function barchart(vals, labels, H, col, unit) {
       meta.textContent = "Saved " + savedLabel;
       topRow.lastElementChild.replaceWith(meta);
     }
-    return \`<!doctype html>
+    const html = \`<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
@@ -1558,6 +1621,7 @@ function barchart(vals, labels, H, col, unit) {
   <\/script>
 </body>
 </html>\`;
+    return injectSnapshotReactShell(html, payload);
   }
   async function downloadSnapshot() {
     const btn = document.getElementById("sadv-save-btn");
