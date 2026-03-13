@@ -1004,19 +1004,62 @@ function barchart(vals, labels, H, col, unit) {
     window.__SEARCHADVISOR_EXPORT_PAYLOAD__ = EXPORT_PAYLOAD;
     const SITE_META_MAP = EXPORT_PAYLOAD.siteMeta || {};
     const MERGED_META = EXPORT_PAYLOAD.mergedMeta || null;
+    var snapshotShellMetaState = {
+      siteMeta: SITE_META_MAP,
+      mergedMeta: MERGED_META,
+    };
+    function setSnapshotMetaState(state) {
+      snapshotShellMetaState = {
+        siteMeta:
+          state && state.siteMeta
+            ? state.siteMeta
+            : SITE_META_MAP,
+        mergedMeta:
+          state && Object.prototype.hasOwnProperty.call(state, "mergedMeta")
+            ? state.mergedMeta
+            : MERGED_META,
+      };
+    }
+    function getSiteMetaMap() {
+      return snapshotShellMetaState && snapshotShellMetaState.siteMeta
+        ? snapshotShellMetaState.siteMeta
+        : SITE_META_MAP;
+    }
+    function getMergedMetaState() {
+      return snapshotShellMetaState ? snapshotShellMetaState.mergedMeta : MERGED_META;
+    }
+    const FIELD_FAILURE_RETRY_MS = 5 * 60 * 1000;
+    function hasSuccessfulDiagnosisMetaSnapshot(data) {
+      return !!(
+        data &&
+        ((data.diagnosisMeta && data.diagnosisMeta.code === 0 && data.diagnosisMetaRange) ||
+          data.diagnosisMetaFetchState === "success")
+      );
+    }
+    function hasRecentDiagnosisMetaFailure(data, cooldownMs = FIELD_FAILURE_RETRY_MS) {
+      return !!(
+        data &&
+        data.diagnosisMetaFetchState === "failure" &&
+        typeof data.diagnosisMetaFetchedAt === "number" &&
+        Date.now() - data.diagnosisMetaFetchedAt < cooldownMs
+      );
+    }
+    function hasDiagnosisMetaSnapshot(data) {
+      return hasSuccessfulDiagnosisMetaSnapshot(data) || hasRecentDiagnosisMetaFailure(data);
+    }
     function getSiteShortName(a) {
-      const s = a ? SITE_META_MAP[a] || null : null;
+      const s = a ? getSiteMetaMap()[a] || null : null;
       const f = s ? (s.displayLabel || s.label || s.shortName || "").trim() : "";
       return f || (a ? a.replace(/^https?:\\\\/\\\\//, "") : "사이트 선택");
     }
     function getSiteLabel(a) {
       if (!a) return "사이트 선택";
-      const s = SITE_META_MAP[a] || null;
+      const s = getSiteMetaMap()[a] || null;
       const f = s ? (s.displayLabel || s.label || s.shortName || "").trim() : "";
       return f || getSiteShortName(a);
     }
     function isMergedReport() {
-      return !!MERGED_META;
+      return !!getMergedMetaState();
     }
     const C = \${JSON.stringify(C)};
     const COLORS = \${JSON.stringify(COLORS)};
@@ -1089,6 +1132,7 @@ function barchart(vals, labels, H, col, unit) {
     const SITE_COLORS_MAP = {};
     const memCache = {};
     let siteViewReqId = 0;
+    let allViewReqId = 0;
     const p = document.getElementById("sadv-p");
     const modeBar = document.getElementById("sadv-mode-bar");
     const siteBar = document.getElementById("sadv-site-bar");

@@ -177,6 +177,20 @@ test("saved tmp html exposes merge-aware export hooks", () => {
   assert.match(runtime, /function getSiteLabel\(a\) \{/);
 });
 
+test("saved tmp html bootstrap carries its own snapshot meta helpers", () => {
+  assert.match(runtime, /var snapshotShellMetaState = \{/);
+  assert.match(runtime, /siteMeta: SITE_META_MAP,/);
+  assert.match(runtime, /mergedMeta: MERGED_META,/);
+  assert.match(runtime, /function setSnapshotMetaState\(state\) \{/);
+  assert.match(runtime, /function getSiteMetaMap\(\) \{/);
+  assert.match(runtime, /function getMergedMetaState\(\) \{/);
+  assert.match(runtime, /return snapshotShellMetaState \? snapshotShellMetaState\.mergedMeta : MERGED_META;/);
+  assert.match(runtime, /const FIELD_FAILURE_RETRY_MS = 5 \* 60 \* 1000;/);
+  assert.match(runtime, /function hasSuccessfulDiagnosisMetaSnapshot\(data\) \{/);
+  assert.match(runtime, /function hasRecentDiagnosisMetaFailure\(data, cooldownMs = FIELD_FAILURE_RETRY_MS\) \{/);
+  assert.match(runtime, /function hasDiagnosisMetaSnapshot\(data\) \{/);
+});
+
 test("export path supports cache-first and force-refresh detail collection", () => {
   assert.match(runtime, /async function collectExportData\(onProgress, options\) \{/);
   assert.match(
@@ -302,4 +316,9 @@ test("saved tmp html direct save forces refresh and merges snapshot meta fallbac
     runtime,
     /state:\{\.\.\.E,curMode:M\.curMode,curSite:M\.curSite,curTab:M\.curTab,allSites:M\.allSites,siteMeta:M\.siteMeta,mergedMeta:M\.mergedMeta\}/,
   );
+});
+
+test("saved tmp html bootstrap initializes both site and all-sites request guards", () => {
+  assert.match(runtime, /let siteViewReqId = 0;/);
+  assert.match(runtime, /let allViewReqId = 0;/);
 });
