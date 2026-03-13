@@ -265,6 +265,10 @@ test("export path supports cache-first and force-refresh detail collection", () 
     runtime,
     /const refreshMode = options && options\.refreshMode === "refresh" \? "refresh" : "cache-first";/,
   );
+  assert.match(runtime, /async function ensureExportSiteList\(refreshMode\) \{/);
+  assert.match(runtime, /const forceSiteListRefresh = refreshMode === "refresh";/);
+  assert.match(runtime, /await loadSiteList\(forceSiteListRefresh\);/);
+  assert.match(runtime, /await ensureExportSiteList\(refreshMode\);/);
   assert.match(runtime, /return resolveExportSiteData\(site, \{ refreshMode \}\);/);
   assert.match(runtime, /const FIELD_FAILURE_RETRY_MS = 5 \* 60 \* 1000;/);
   assert.match(runtime, /function hasSuccessfulFieldSnapshot\(data, key\) \{/);
@@ -293,11 +297,15 @@ test("export path supports cache-first and force-refresh detail collection", () 
 });
 
 test("site detail fetch tracks endpoint-level success and retries only incomplete fields for export", () => {
+  assert.match(runtime, /const FIELD_SUCCESS_TTL_MS = DATA_TTL;/);
+  assert.match(runtime, /function getFieldSnapshotFetchedAt\(data, key\) \{/);
+  assert.match(runtime, /function hasFreshFieldSnapshot\(data, key, ttlMs = FIELD_SUCCESS_TTL_MS\) \{/);
   assert.match(runtime, /function hasLegacySuccessfulFieldSnapshot\(data, key\) \{/);
   assert.match(runtime, /exposeFetchState: exposeRes\.ok \? "success" : "failure"/);
   assert.match(runtime, /if \(key === "expose"\) return data\.expose != null;/);
   assert.match(runtime, /if \(\(key === "crawl" \|\| key === "backlink"\) && data\.detailLoaded === true\) \{/);
   assert.match(runtime, /return data\[key\] != null;/);
+  assert.match(runtime, /hasFreshFieldSnapshot\(data, key\)/);
   assert.match(runtime, /const needCrawl = shouldFetchField\(baseData, "crawl", options\);/);
   assert.match(runtime, /const needBacklink = shouldFetchField\(baseData, "backlink", options\);/);
   assert.match(runtime, /needCrawl[\s\S]*?key: "crawl"/);
@@ -313,6 +321,7 @@ test("diagnosis meta follows the same cache-aware retry policy during export", (
     runtime,
     /function hasDiagnosisMetaSnapshot\(data\) \{\s+return hasSuccessfulDiagnosisMetaSnapshot\(data\) \|\| hasRecentDiagnosisMetaFailure\(data\);\s+\}/,
   );
+  assert.match(runtime, /hasFreshFieldSnapshot\(data, "diagnosisMeta"\)/);
   assert.match(runtime, /if \(options && options\.force\) return true;/);
   assert.match(runtime, /if \(hasSuccessfulDiagnosisMetaSnapshot\(data\)\) return false;/);
   assert.match(runtime, /if \(options && options\.retryIncomplete\) return true;/);

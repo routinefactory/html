@@ -824,10 +824,11 @@ function barchart(vals, labels, H, col, unit) {
   async function collectExportData(onProgress, options) {
     const dataBySite = {};
     const summaryRows = [];
-    const total = allSites.length;
-    let done = 0;
     const batchSize = 3;
     const refreshMode = options && options.refreshMode === "refresh" ? "refresh" : "cache-first";
+    await ensureExportSiteList(refreshMode);
+    const total = allSites.length;
+    let done = 0;
     for (let i = 0; i < allSites.length; i += batchSize) {
       const batch = allSites.slice(i, i + batchSize);
       const results = await Promise.allSettled(
@@ -1485,8 +1486,11 @@ function barchart(vals, labels, H, col, unit) {
   function getCachedData(site) {
     const d = lsGet(getSiteDataCacheKey(site));
     if (!d) return null;
-    if (Date.now() - d.ts > DATA_TTL) return null;
-    return d.data;
+    if (!d.data || typeof d.data !== "object") return null;
+    return {
+      ...d.data,
+      __cacheSavedAt: typeof d.ts === "number" ? d.ts : null,
+    };
   }
   function setCachedData(site, data) {
     lsSet(getSiteDataCacheKey(site), {
@@ -1604,8 +1608,19 @@ function barchart(vals, labels, H, col, unit) {
   }
   const memCache = {};
   const FIELD_FAILURE_RETRY_MS = 5 * 60 * 1000;
+  const FIELD_SUCCESS_TTL_MS = DATA_TTL;
   function hasOwnDataField(data, key) {
     return !!data && Object.prototype.hasOwnProperty.call(data, key);
+  }
+  function getFieldSnapshotFetchedAt(data, key) {
+    if (!data) return null;
+    const fetchedAt = data[key + "FetchedAt"];
+    if (typeof fetchedAt === "number") return fetchedAt;
+    return typeof data.__cacheSavedAt === "number" ? data.__cacheSavedAt : null;
+  }
+  function hasFreshFieldSnapshot(data, key, ttlMs = FIELD_SUCCESS_TTL_MS) {
+    const fetchedAt = getFieldSnapshotFetchedAt(data, key);
+    return typeof fetchedAt === "number" && Date.now() - fetchedAt < ttlMs;
   }
   function hasLegacySuccessfulFieldSnapshot(data, key) {
     if (!data) return false;
@@ -1618,6 +1633,7 @@ function barchart(vals, labels, H, col, unit) {
   function hasSuccessfulFieldSnapshot(data, key) {
     return !!(
       data &&
+      hasFreshFieldSnapshot(data, key) &&
       hasOwnDataField(data, key) &&
       (data[key + "FetchState"] === "success" ||
         hasLegacySuccessfulFieldSnapshot(data, key))
@@ -1671,6 +1687,7 @@ function barchart(vals, labels, H, col, unit) {
     if (hasOwnDataField(data, "backlinkFetchedAt"))
       normalized.backlinkFetchedAt = data.backlinkFetchedAt ?? null;
     if (hasOwnDataField(data, "backlinkStatus")) normalized.backlinkStatus = data.backlinkStatus ?? null;
+    if (hasOwnDataField(data, "__cacheSavedAt")) normalized.__cacheSavedAt = data.__cacheSavedAt ?? null;
     return normalized;
   }
   function buildSiteSummaryRow(site, data) {
@@ -1733,6 +1750,7 @@ function barchart(vals, labels, H, col, unit) {
   function hasSuccessfulDiagnosisMetaSnapshot(data) {
     return !!(
       data &&
+      hasFreshFieldSnapshot(data, "diagnosisMeta") &&
       ((data.diagnosisMeta && data.diagnosisMeta.code === 0 && data.diagnosisMetaRange) ||
         data.diagnosisMetaFetchState === "success")
     );
@@ -2005,6 +2023,12 @@ function barchart(vals, labels, H, col, unit) {
     delete memCache[site];
     clearCachedData(site);
     return fetchSiteData(site, { force: true, retryIncomplete: true });
+  }
+  async function ensureExportSiteList(refreshMode) {
+    const forceSiteListRefresh = refreshMode === "refresh";
+    await loadSiteList(forceSiteListRefresh);
+    assignColors();
+    ensureCurrentSite();
   }
   async function resolveExportSiteData(site, options) {
     const refreshMode = options && options.refreshMode === "refresh" ? "refresh" : "cache-first";
