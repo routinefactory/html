@@ -144,6 +144,7 @@ test("saved tmp html can fall back to direct tab activation", () => {
 
 test("legacy runtime exposes direct tab activation and merge-aware site labels", () => {
   assert.ok(runtime.includes("function setTab(tab) {"));
+  assert.ok(runtime.includes(`const t = tabsEl.querySelector('[data-t="' + tab + '"]');`));
   assert.ok(runtime.includes("labelEl.innerHTML = \\`<span>\\${getSiteLabel(site)}</span>\\`;"));
   assert.ok(
     runtime.includes(

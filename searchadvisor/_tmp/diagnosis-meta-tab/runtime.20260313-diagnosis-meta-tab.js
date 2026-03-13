@@ -1097,7 +1097,7 @@ function barchart(vals, labels, H, col, unit) {\r
     }).join("");\r
     function setTab(tab) {\r
       if (!tab || tab === curTab) return;\r
-      const t = tabsEl.querySelector(\`[data-t="\${tab}"]\`);\r
+      const t = tabsEl.querySelector('[data-t="' + tab + '"]');\r
       if (!t) return;\r
       curTab = tab;\r
       tabsEl.querySelectorAll(".sadv-t").forEach(function (b) {\r
