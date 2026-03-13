@@ -3197,22 +3197,30 @@ function barchart(vals, labels, H, col, unit) {
 })();
 `,lS="sadv_data_v2_",R0=720*60*1e3;function aS(a){return lS+btoa(a).replace(/=/g,"")}function A0(a){try{const s=localStorage.getItem(aS(a));if(!s)return null;const f=JSON.parse(s);return typeof f?.ts=="number"?{ts:f.ts}:null}catch{return null}}function rS(a){const s=Date.now();if(a.curMode==="site"&&a.curSite){const v=A0(a.curSite);return v?{label:a.curSite.replace(/^https?:\/\//,""),updatedAt:v.ts,remainingMs:Math.max(0,v.ts+R0-s),sourceCount:1,measuredAt:s}:null}const f=a.allSites.map(v=>({site:v,record:A0(v)})).filter(v=>!!v.record);return f.length?{label:`전체 ${f.length}개`,updatedAt:Math.max(...f.map(v=>v.record.ts)),remainingMs:Math.max(0,Math.min(...f.map(v=>v.record.ts+R0))-s),sourceCount:f.length,measuredAt:s}:null}function _0(a){return{...a,runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"dev",runtimeLoadedAt:window.__SEARCHADVISOR_RUNTIME_LOADED_AT__||null,cacheMeta:rS(a)}}/* Runtime surgery rule: keep Ho() patch anchors ASCII-only and encode Korean UI text with \\uXXXX escapes. */function Ho(a,s,f){if(a.includes(s))return a.replace(s,f);const v=[s.replace(/\r/g,""),s.replace(/\r/g,"\n"),s.replace(/\n/g,"\r\n"),s.replace(/\n/g,"\\n")];for(const h of v)if(h&&a.includes(h))return a.replace(h,f);if(s.startsWith('      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"'))return a;throw new Error(`Legacy patch point not found: ${s.slice(0,48)}`)}function jS(a,s,f){let v=-1;for(const p of s)if((v=a.indexOf(p))>=0)break;if(v<0)throw new Error(`Legacy patch point not found: ${f} declaration`);return v}function qS(a,s,f,v,p){const S=a.indexOf(s,v);if(S<0)throw new Error(`Legacy patch point not found: ${p} start`);let b=-1,E=0;for(let T=S;T<a.length;T++)if(a[T]===s)E++;else if(a[T]===f&&(E--,E===0)){b=T+1;break}if(b<0)throw new Error(`Legacy patch point not found: ${p} end`);return b}function $S(a,s){for(;s<a.length&&(a[s]===";"||a[s]==="\r"||a[s]==="\n"||a[s]===" "||a[s]==="\t");)s++;return s}function eA(a,s,f,v,p,S){const b=jS(a,s,S),E=qS(a,v,p,b,S),T=$S(a,E);return a.slice(0,b)+f+a.slice(T)}function patchLegacyNormalizeSiteData(a){const s=`  function normalizeSiteData(data) {
     if (!data) return null;
-    const expose = data.expose || null,
-      detailLoaded =
+    const normalized = {
+      expose: "expose" in data ? data.expose ?? null : null,
+      crawl: "crawl" in data ? data.crawl ?? null : null,
+      backlink: "backlink" in data ? data.backlink ?? null : null,
+      detailLoaded:
         typeof data.detailLoaded === "boolean"
           ? data.detailLoaded
-          : "crawl" in data || "backlink" in data;
-    const normalized = {
-      expose,
-      crawl: detailLoaded ? (data.crawl ?? null) : null,
-      backlink: detailLoaded ? (data.backlink ?? null) : null,
-      detailLoaded,
+          : ("crawl" in data && data.crawl != null) || ("backlink" in data && data.backlink != null),
     };
     if ("diagnosisMeta" in data) normalized.diagnosisMeta = data.diagnosisMeta ?? null;
     if ("diagnosisMetaStatus" in data) normalized.diagnosisMetaStatus = data.diagnosisMetaStatus ?? null;
     if ("diagnosisMetaRange" in data) normalized.diagnosisMetaRange = data.diagnosisMetaRange ?? null;
     if ("diagnosisMetaFetchState" in data) normalized.diagnosisMetaFetchState = data.diagnosisMetaFetchState ?? null;
     if ("diagnosisMetaFetchedAt" in data) normalized.diagnosisMetaFetchedAt = data.diagnosisMetaFetchedAt ?? null;
+    if ("exposeFetchState" in data) normalized.exposeFetchState = data.exposeFetchState ?? null;
+    if ("exposeFetchedAt" in data) normalized.exposeFetchedAt = data.exposeFetchedAt ?? null;
+    if ("exposeStatus" in data) normalized.exposeStatus = data.exposeStatus ?? null;
+    if ("crawlFetchState" in data) normalized.crawlFetchState = data.crawlFetchState ?? null;
+    if ("crawlFetchedAt" in data) normalized.crawlFetchedAt = data.crawlFetchedAt ?? null;
+    if ("crawlStatus" in data) normalized.crawlStatus = data.crawlStatus ?? null;
+    if ("backlinkFetchState" in data) normalized.backlinkFetchState = data.backlinkFetchState ?? null;
+    if ("backlinkFetchedAt" in data) normalized.backlinkFetchedAt = data.backlinkFetchedAt ?? null;
+    if ("backlinkStatus" in data) normalized.backlinkStatus = data.backlinkStatus ?? null;
+    if ("__cacheSavedAt" in data) normalized.__cacheSavedAt = data.__cacheSavedAt ?? null;
     return normalized;
   }
 `;return eA(a,['  function normalizeSiteData(data) {',"  const normalizeSiteData = function (data) {","  const normalizeSiteData = function(data) {","  const normalizeSiteData = (data) => {","  const normalizeSiteData=(data)=>{","  const normalizeSiteData = data => {","  const normalizeSiteData=data=>{"],s,"{","}","normalizeSiteData")}function patchLegacyFetchSiteData(a){const s=`  async function fetchSiteData(site) {

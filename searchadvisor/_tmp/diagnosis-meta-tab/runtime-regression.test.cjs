@@ -430,3 +430,13 @@ test("saved tmp html uses dedicated offline all-sites renderer", () => {
   assert.match(runtime, /if \(mode === "all"\) \{[\s\S]*renderSnapshotAllSites\(\);/);
   assert.match(runtime, /if \(curMode === "all"\) await renderSnapshotAllSites\(\);/);
 });
+
+test("legacy normalize patch preserves field-level cache metadata", () => {
+  assert.match(runtime, /if \("exposeFetchState" in data\) normalized\.exposeFetchState = data\.exposeFetchState \?\? null;/);
+  assert.match(runtime, /if \("exposeFetchedAt" in data\) normalized\.exposeFetchedAt = data\.exposeFetchedAt \?\? null;/);
+  assert.match(runtime, /if \("crawlFetchState" in data\) normalized\.crawlFetchState = data\.crawlFetchState \?\? null;/);
+  assert.match(runtime, /if \("crawlFetchedAt" in data\) normalized\.crawlFetchedAt = data\.crawlFetchedAt \?\? null;/);
+  assert.match(runtime, /if \("backlinkFetchState" in data\) normalized\.backlinkFetchState = data\.backlinkFetchState \?\? null;/);
+  assert.match(runtime, /if \("backlinkFetchedAt" in data\) normalized\.backlinkFetchedAt = data\.backlinkFetchedAt \?\? null;/);
+  assert.match(runtime, /if \("__cacheSavedAt" in data\) normalized\.__cacheSavedAt = data\.__cacheSavedAt \?\? null;/);
+});
