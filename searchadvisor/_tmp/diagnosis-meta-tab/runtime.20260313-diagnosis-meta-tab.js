@@ -1331,8 +1331,21 @@ function barchart(vals, labels, H, col, unit) {
   function hasOwnDataField(data, key) {
     return !!data && Object.prototype.hasOwnProperty.call(data, key);
   }
+  function hasLegacySuccessfulFieldSnapshot(data, key) {
+    if (!data) return false;
+    if (key === "expose") return data.expose != null;
+    if ((key === "crawl" || key === "backlink") && data.detailLoaded === true) {
+      return data[key] != null;
+    }
+    return false;
+  }
   function hasSuccessfulFieldSnapshot(data, key) {
-    return hasOwnDataField(data, key) && data[key + "FetchState"] === "success";
+    return !!(
+      data &&
+      hasOwnDataField(data, key) &&
+      (data[key + "FetchState"] === "success" ||
+        hasLegacySuccessfulFieldSnapshot(data, key))
+    );
   }
   function hasRecentFieldFailure(data, key, cooldownMs = FIELD_FAILURE_RETRY_MS) {
     return !!(
@@ -1806,6 +1819,7 @@ function barchart(vals, labels, H, col, unit) {
   }
   function setComboSite(site) {
     if (!site || !allSites.includes(site)) return;
+    const sameSite = curSite === site;
     curSite = site;
     const col = SITE_COLORS_MAP[site] || C.muted,
       shortName = getSiteLabel(site);
@@ -1814,7 +1828,7 @@ function barchart(vals, labels, H, col, unit) {
     document.querySelectorAll(".sadv-combo-item").forEach((el) => {
       el.classList.toggle("active", el.dataset.site === site);
     });
-    if (curMode === "site") loadSiteView(site);
+    if (curMode === "site" && !sameSite) loadSiteView(site);
   }
   document
     .getElementById("sadv-combo-btn")
@@ -2879,7 +2893,7 @@ function barchart(vals, labels, H, col, unit) {
       if (inj) inj.remove();
       delete window.__sadvApi;
     },
-  };`),s=Ho(s,'    if (curMode === "site") loadSiteView(site);',`    if (curMode === "site") loadSiteView(site);
+  };`),s=Ho(s,'    if (curMode === "site" && !sameSite) loadSiteView(site);',`    if (curMode === "site" && !sameSite) loadSiteView(site);
     __sadvNotify();`),s=Ho(s,`    if (window.__sadvR) renderTab(window.__sadvR);
   });`,`    if (window.__sadvR) renderTab(window.__sadvR);
     __sadvNotify();

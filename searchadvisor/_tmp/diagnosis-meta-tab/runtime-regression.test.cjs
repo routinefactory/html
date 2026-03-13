@@ -204,7 +204,11 @@ test("export path supports cache-first and force-refresh detail collection", () 
 });
 
 test("site detail fetch tracks endpoint-level success and retries only incomplete fields for export", () => {
+  assert.match(runtime, /function hasLegacySuccessfulFieldSnapshot\(data, key\) \{/);
   assert.match(runtime, /exposeFetchState: exposeRes\.ok \? "success" : "failure"/);
+  assert.match(runtime, /if \(key === "expose"\) return data\.expose != null;/);
+  assert.match(runtime, /if \(\(key === "crawl" \|\| key === "backlink"\) && data\.detailLoaded === true\) \{/);
+  assert.match(runtime, /return data\[key\] != null;/);
   assert.match(runtime, /const needCrawl = shouldFetchField\(baseData, "crawl", options\);/);
   assert.match(runtime, /const needBacklink = shouldFetchField\(baseData, "backlink", options\);/);
   assert.match(runtime, /needCrawl[\s\S]*?key: "crawl"/);
@@ -213,6 +217,11 @@ test("site detail fetch tracks endpoint-level success and retries only incomplet
     runtime,
     /next\.detailLoaded =\s+next\.crawlFetchState === "success" && next\.backlinkFetchState === "success";/,
   );
+});
+
+test("site picker does not reload the same site twice in a row", () => {
+  assert.match(runtime, /const sameSite = curSite === site;/);
+  assert.match(runtime, /if \(curMode === "site" && !sameSite\) loadSiteView\(site\);/);
 });
 
 test("legacy runtime uses merge-aware labels in site detail selection", () => {
