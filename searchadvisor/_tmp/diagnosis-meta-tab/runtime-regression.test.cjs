@@ -238,6 +238,9 @@ test("saved tmp html exposes merge-aware export hooks", () => {
   assert.match(runtime, /const SITE_META_MAP = EXPORT_PAYLOAD\.siteMeta \|\| \{\};/);
   assert.match(runtime, /const MERGED_META = EXPORT_PAYLOAD\.mergedMeta \|\| null;/);
   assert.match(runtime, /function getSiteLabel\(a\) \{/);
+  assert.match(runtime, /window\.__SEARCHADVISOR_APPLY_REPORT_DECORATIONS__ = applySnapshotReportDecorations;/);
+  assert.match(runtime, /window\.__SEARCHADVISOR_PAYLOAD_CONTRACT__ = \{/);
+  assert.match(runtime, /version: "20260314-payload-contract-v1"/);
 });
 
 test("saved tmp html bootstrap carries its own snapshot meta helpers", () => {
@@ -248,6 +251,8 @@ test("saved tmp html bootstrap carries its own snapshot meta helpers", () => {
   assert.match(runtime, /function getSiteMetaMap\(\) \{/);
   assert.match(runtime, /function getMergedMetaState\(\) \{/);
   assert.match(runtime, /return snapshotShellMetaState \? snapshotShellMetaState\.mergedMeta : MERGED_META;/);
+  assert.match(runtime, /function buildDefaultReportDecoration\(\) \{/);
+  assert.match(runtime, /function applySnapshotReportDecorations\(decoration\) \{/);
   assert.match(runtime, /const FIELD_FAILURE_RETRY_MS = 5 \* 60 \* 1000;/);
   assert.match(runtime, /function hasSuccessfulDiagnosisMetaSnapshot\(data\) \{/);
   assert.match(runtime, /function hasRecentDiagnosisMetaFailure\(data, cooldownMs = FIELD_FAILURE_RETRY_MS\) \{/);

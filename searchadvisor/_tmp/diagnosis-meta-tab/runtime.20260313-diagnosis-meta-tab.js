@@ -1197,6 +1197,95 @@ function barchart(vals, labels, H, col, unit) {
     function isMergedReport() {
       return !!getMergedMetaState();
     }
+    function fmtDateTime(value) {
+      if (!value) return "";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value);
+      return (
+        d.getFullYear() +
+        "-" +
+        String(d.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(d.getDate()).padStart(2, "0") +
+        " " +
+        String(d.getHours()).padStart(2, "0") +
+        ":" +
+        String(d.getMinutes()).padStart(2, "0") +
+        ":" +
+        String(d.getSeconds()).padStart(2, "0")
+      );
+    }
+    function buildDefaultReportDecoration() {
+      const mergedMeta = getMergedMetaState();
+      if (!mergedMeta || !mergedMeta.isMerged) return null;
+      const siteCount = Array.isArray(allSites) ? allSites.length : 0;
+      const naverIds = Array.isArray(mergedMeta.naverIds) ? mergedMeta.naverIds.filter(Boolean) : [];
+      const fileNames = Array.isArray(mergedMeta.fileNames) ? mergedMeta.fileNames.filter(Boolean) : [];
+      const snapshotLines = [
+        "Saved at: " + fmtDateTime(EXPORT_PAYLOAD.savedAt || ""),
+        "Merged accounts: " + naverIds.length + " / sites: " + siteCount,
+      ];
+      if (fileNames.length) snapshotLines.push("Sources: " + fileNames.join(", "));
+      return {
+        title: "SearchAdvisor Merged Report - " + siteCount + " sites",
+        snapshotTitle: "SearchAdvisor Merged Report",
+        snapshotLines,
+        accountBadge: "MERGED " + naverIds.length + " IDs",
+        accountTitle: naverIds.join(", "),
+        siteStatus: siteCount + " sites loaded",
+        siteSummary: "All " + siteCount + " sites sorted by clicks",
+        currentSite: curSite || "",
+      };
+    }
+    function applySnapshotReportDecorations(decoration) {
+      const patch = decoration || buildDefaultReportDecoration();
+      if (!patch) return;
+      if (patch.title) document.title = patch.title;
+      const snapshotTitleEl = document.querySelector(".snapshot-meta-title");
+      if (snapshotTitleEl && patch.snapshotTitle) snapshotTitleEl.textContent = patch.snapshotTitle;
+      const snapshotCopyEl = document.querySelector(".snapshot-meta-copy");
+      if (snapshotCopyEl && Array.isArray(patch.snapshotLines)) {
+        snapshotCopyEl.replaceChildren();
+        patch.snapshotLines.forEach(function (line, index) {
+          if (index > 0) snapshotCopyEl.appendChild(document.createElement("br"));
+          snapshotCopyEl.appendChild(document.createTextNode(String(line)));
+        });
+      }
+      const accountBadgeEl = document.getElementById("sadv-account-badge");
+      if (accountBadgeEl && patch.accountBadge) {
+        accountBadgeEl.textContent = patch.accountBadge;
+        accountBadgeEl.title = patch.accountTitle || "";
+      }
+      const siteLabelEl = document.querySelector("#sadv-site-label span");
+      if (siteLabelEl && patch.siteStatus) siteLabelEl.textContent = patch.siteStatus;
+      const comboLabelEl = document.getElementById("sadv-combo-label");
+      if (comboLabelEl && patch.currentSite) comboLabelEl.textContent = getSiteLabel(patch.currentSite);
+      const statusTextEl = document.querySelector('[data-sadvx="status-text"] span');
+      if (statusTextEl && patch.siteStatus) statusTextEl.textContent = patch.siteStatus;
+      const currentSiteEl = document.querySelector('[data-sadvx="current-site"]');
+      if (currentSiteEl) {
+        currentSiteEl.textContent = patch.currentSite ? getSiteLabel(patch.currentSite) : "Select site";
+      }
+      const siteSummaryEl = document.querySelector('[data-sadvx="site-summary"]');
+      if (siteSummaryEl && patch.siteSummary) siteSummaryEl.textContent = patch.siteSummary;
+      document.querySelectorAll("[data-sadvx-site]").forEach(function (button) {
+        const site = button.getAttribute("data-sadvx-site") || "";
+        const labelWrap = button.children[1];
+        const titleEl = labelWrap ? labelWrap.firstElementChild : null;
+        if (titleEl) titleEl.textContent = getSiteLabel(site);
+        if (patch.currentSite) button.dataset.active = site === patch.currentSite ? "true" : "false";
+      });
+    }
+    window.__SEARCHADVISOR_APPLY_REPORT_DECORATIONS__ = applySnapshotReportDecorations;
+    window.__SEARCHADVISOR_PAYLOAD_CONTRACT__ = {
+      version: "20260314-payload-contract-v1",
+      mode: "saved-html",
+      getSiteMetaMap,
+      getMergedMetaState,
+      getSiteShortName,
+      getSiteLabel,
+      applyReportDecorations: applySnapshotReportDecorations,
+    };
     const C = \${JSON.stringify(C)};
     const COLORS = \${JSON.stringify(COLORS)};
     const DOW = \${JSON.stringify(DOW)};
@@ -1334,6 +1423,7 @@ function barchart(vals, labels, H, col, unit) {
     if (curSite) setComboSite(curSite);
     setAllSitesLabel();
     switchMode(INITIAL_MODE);
+    applySnapshotReportDecorations();
   <\/script>
 </body>
 </html>\`;

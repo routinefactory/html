@@ -11,6 +11,8 @@ See `searchadvisor/README.md` for the shared runtime rules, deployment split, an
 Stable checkpoint reference:
 
 - `searchadvisor/_tmp/diagnosis-meta-tab/CHECKPOINT.20260313-r36.md`
+- `searchadvisor/_tmp/diagnosis-meta-tab/WORKING-GUIDE.20260314.md`
+- `searchadvisor/_tmp/diagnosis-meta-tab/console-checks-r60-payload-contract.txt`
 
 Important direct-edit rule for this runtime:
 
