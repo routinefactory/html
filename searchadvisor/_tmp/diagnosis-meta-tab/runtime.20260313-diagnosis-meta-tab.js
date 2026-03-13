@@ -2259,6 +2259,209 @@ function barchart(vals, labels, H, col, unit) {
     bdEl.appendChild(wrap);
     bdEl.scrollTop = 0;
   }
+  renderAllSites = async function renderAllSitesPatched() {
+    const requestId = ++allViewReqId;
+    setAllSitesLabel();
+    const loading = document.createElement("div");
+    loading.style.cssText =
+      "padding:24px 18px 20px;color:#7a9ab8;text-align:left;line-height:1.6";
+    loading.innerHTML =
+      '<div style="font-size:13px;font-weight:700;color:#d4ecff;margin-bottom:8px">\uC804\uCCB4 \uD604\uD669\uC744 \uC900\uBE44 \uC911\uC785\uB2C8\uB2E4</div>' +
+      '<div id="sadv-all-progress-detail" style="font-size:11px;margin-bottom:10px">\uAE30\uBCF8 \uB9AC\uD3EC\uD2B8\uB97C \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.</div>' +
+      '<div style="height:10px;border-radius:999px;background:#0d1829;border:1px solid #1a2d45;overflow:hidden"><div id="sadv-all-progress-bar" style="width:6%;height:100%;background:linear-gradient(90deg,#40c4ff,#00e676)"></div></div>' +
+      '<div id="sadv-all-progress-meta" style="font-size:10px;color:#3d5a78;margin-top:8px">\uBA54\uD0C0 \uC9C4\uB2E8\uC740 2\uAC1C\uC529 \uCC9C\uCC9C\uD788 \uC694\uCCAD\uD569\uB2C8\uB2E4.</div>';
+    bdEl.innerHTML = "";
+    bdEl.appendChild(loading);
+    if (!allSites.length) {
+      bdEl.innerHTML =
+        '<div style="padding:30px 20px;text-align:center"><div style="font-size:32px">\u21BB</div><div style="color:#ffca28;font-weight:700;margin:10px 0">\uC0AC\uC774\uD2B8 \uBAA9\uB85D\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC5B4\uC694</div><div style="color:#7a9ab8;font-size:12px;line-height:2">\u21BB \uBC84\uD2BC\uC744 \uB20C\uB7EC \uC0C8\uB85C\uACE0\uCE68 \uD574\uBCF4\uC138\uC694<br>\uB610\uB294 \uC11C\uCE58\uC5B4\uB4DC\uBC14\uC774\uC800 \uCF58\uC194 \uD398\uC774\uC9C0\uC5D0\uC11C \uC2E4\uD589\uD574\uC8FC\uC138\uC694</div></div>';
+      return;
+    }
+    const sitesToLoad = allSites;
+    const siteDataBySite = {};
+    const loadingDetail = loading.querySelector("#sadv-all-progress-detail");
+    const loadingBar = loading.querySelector("#sadv-all-progress-bar");
+    const loadingMeta = loading.querySelector("#sadv-all-progress-meta");
+    let missingDiagnosisMetaCount = null;
+    const setProgress = function (label, ratio, note) {
+      if (requestId !== allViewReqId || curMode !== "all") return;
+      if (ratio >= 0.55 && missingDiagnosisMetaCount === 0) return;
+      if (loadingDetail) loadingDetail.textContent = label;
+      if (loadingBar) loadingBar.style.width = Math.max(6, Math.round(ratio * 100)) + "%";
+      if (loadingMeta && note) loadingMeta.textContent = note;
+    };
+    const exposeResults = [];
+    for (let i = 0; i < sitesToLoad.length; i += ALL_SITES_BATCH) {
+      const batchSites = sitesToLoad.slice(i, i + ALL_SITES_BATCH);
+      setProgress(
+        "\uAE30\uBCF8 \uB9AC\uD3EC\uD2B8 " +
+          Math.min(i + batchSites.length, sitesToLoad.length) +
+          " / " +
+          sitesToLoad.length,
+        0.08 + (Math.min(i + batchSites.length, sitesToLoad.length) / sitesToLoad.length) * 0.42,
+      );
+      const batchResults = await Promise.allSettled(batchSites.map((site) => fetchExposeData(site)));
+      if (requestId !== allViewReqId || curMode !== "all") return;
+      batchResults.forEach(function (result, offset) {
+        exposeResults[i + offset] = result;
+        if (result.status === "fulfilled") {
+          siteDataBySite[batchSites[offset]] = result.value;
+        }
+      });
+    }
+    const metaSitesToLoad = sitesToLoad.filter(function (site) {
+      return !hasDiagnosisMetaSnapshot(siteDataBySite[site] || null);
+    });
+    missingDiagnosisMetaCount = metaSitesToLoad.length;
+    let metaLoaded = 0;
+    for (let i = 0; i < metaSitesToLoad.length; i += 2) {
+      const batchSites = metaSitesToLoad.slice(i, i + 2);
+      setProgress(
+        "\uC0C9\uC778 \uC9C4\uB2E8 " + metaLoaded + " / " + metaSitesToLoad.length,
+        0.55 + (metaLoaded / Math.max(1, metaSitesToLoad.length)) * 0.38,
+        "\uBA54\uD0C0 \uC9C4\uB2E8\uC740 2\uAC1C\uC529 \uCC9C\uCC9C\uD788 \uC694\uCCAD\uD574 \uCC28\uB2E8 \uC704\uD5D8\uC744 \uB0AE\uCDA5\uB2C8\uB2E4.",
+      );
+      const batchResults = await Promise.allSettled(
+        batchSites.map((site) => fetchDiagnosisMeta(site, siteDataBySite[site] || null)),
+      );
+      if (requestId !== allViewReqId || curMode !== "all") return;
+      batchResults.forEach(function (result, offset) {
+        metaLoaded += 1;
+        if (result.status === "fulfilled") {
+          siteDataBySite[batchSites[offset]] = result.value;
+        }
+      });
+      setProgress(
+        "\uC0C9\uC778 \uC9C4\uB2E8 " + metaLoaded + " / " + metaSitesToLoad.length,
+        0.55 + (metaLoaded / Math.max(1, metaSitesToLoad.length)) * 0.38,
+        "\uAC00\uC838\uC628 \uC0C9\uC778 \uC9C4\uB2E8 \uCE90\uC2DC\uB294 \uC0AC\uC774\uD2B8\uBCC4 \uD0ED\uC5D0\uC11C\uB3C4 \uADF8\uB300\uB85C \uC7AC\uC0AC\uC6A9\uD569\uB2C8\uB2E4.",
+      );
+      if (i + 2 < metaSitesToLoad.length) {
+        await new Promise((resolve) => setTimeout(resolve, 140));
+      }
+    }
+    const rows = sitesToLoad.map((site, i) =>
+      siteDataBySite[site]
+        ? buildSiteSummaryRow(site, siteDataBySite[site])
+        : exposeResults[i] && exposeResults[i].status === "fulfilled"
+          ? buildSiteSummaryRow(site, exposeResults[i].value)
+          : buildSiteSummaryRow(site, null),
+    );
+    rows.sort((a, b) => b.totalC - a.totalC);
+    window.__sadvRows = rows;
+    buildCombo(rows);
+    const wrap = document.createElement("div");
+    const grandC = rows.reduce((a, r) => a + r.totalC, 0);
+    const grandE = rows.reduce((a, r) => a + r.totalE, 0);
+    const avgCtrAll = grandE ? (grandC / grandE) * 100 : 0;
+    wrap.appendChild(
+      kpiGrid([
+        { label: "\uC804\uCCB4 \uD074\uB9AD", value: (grandC / 10000).toFixed(1) + "\uB9CC", sub: "90\uC77C \uD569\uACC4", color: C.green },
+        { label: "\uC804\uCCB4 \uB178\uCD9C", value: (grandE / 10000000).toFixed(1) + "\uCC9C\uB9CC", sub: "90\uC77C \uD569\uACC4", color: C.blue },
+        { label: "\uD3C9\uADE0CTR", value: avgCtrAll.toFixed(2) + "%", sub: "90\uC77C \uD3C9\uADE0", color: C.amber },
+        { label: "\uD65C\uC131\uC0AC\uC774\uD2B8", value: rows.filter((r) => r.totalC > 0).length + "\uAC1C", color: C.teal },
+      ]),
+    );
+    wrap.appendChild(
+      secTitle(
+        "\uD074\uB9AD \uB7AD\uD0B9 TOP " +
+          Math.min(rows.length, 30) +
+          ' <span style="font-size:9px;font-weight:400;color:#3d5a78;letter-spacing:0">90\uC77C \uD569\uACC4</span>',
+      ),
+    );
+    const top30 = rows.slice(0, 30);
+    wrap.appendChild(
+      chartCard(
+        "TOP " + top30.length + " \uD074\uB9AD",
+        "",
+        C.green,
+        barchart(
+          top30.map((r) => r.totalC),
+          top30.map((r) => r.site.replace(/^https?:\\/\\//, "")),
+          80,
+          C.green,
+          "\uD68C",
+        ),
+        top30.map((_, i) => "#" + (i + 1)),
+      ),
+    );
+    wrap.appendChild(secTitle("\uC0AC\uC774\uD2B8\uBCC4 \uC0C1\uC138"));
+    rows.forEach(function (r, i) {
+      const allCardColors = [C.green, C.blue, C.amber, C.teal, C.purple];
+      const col = allCardColors[i % allCardColors.length];
+      const card = document.createElement("div");
+      card.className = "sadv-allcard";
+      card.style.borderTop = "2px solid " + col + "33";
+      const shortName = typeof getSiteLabel === "function" ? getSiteLabel(r.site) : r.site.replace(/^https?:\\/\\//, "");
+      card.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="width:8px;height:8px;border-radius:50%;background:' +
+        col +
+        ';flex-shrink:0;box-shadow:0 0 0 4px ' +
+        col +
+        '12"></div><span style="font-size:12px;font-weight:700;line-height:1.3;color:#e0ecff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px">' +
+        shortName +
+        '</span></div></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:8px"><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:' +
+        C.green +
+        '">' +
+        fmt(r.totalC) +
+        '</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">\uD074\uB9AD</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:' +
+        C.blue +
+        '">' +
+        (r.totalE / 10000).toFixed(1) +
+        '\uB9CC</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">\uB178\uCD9C</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:' +
+        C.amber +
+        '">' +
+        r.avgCtr +
+        '%</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">CTR</div></div></div>';
+      if (r.clicks && r.clicks.length > 1) {
+        const miniDates = (r.logs || []).map(function (log) {
+          return fmtB(log.date);
+        });
+        const mini = sparkline(r.clicks, miniDates, 34, col, "");
+        mini.style.cssText += "opacity:.82";
+        card.appendChild(mini);
+      }
+      const indexBlock = document.createElement("div");
+      indexBlock.style.cssText = "margin-top:8px;padding-top:8px;border-top:1px solid " + col + "33";
+      if (r.diagnosisIndexedValues && r.diagnosisIndexedValues.length > 1) {
+        indexBlock.innerHTML =
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:#7a9ab8">\uC0C9\uC778 \uCD94\uC774</span><span style="font-size:12px;font-weight:800;color:' +
+          col +
+          '">' +
+          fmt(r.diagnosisIndexedCurrent) +
+          '\uAC74</span></div>';
+        const indexMini = sparkline(r.diagnosisIndexedValues, r.diagnosisIndexedDates, 42, col, "\uAC74", { minValue: 0 });
+        indexMini.style.cssText += "opacity:.82";
+        indexBlock.appendChild(indexMini);
+      } else {
+        const metaCode = r.diagnosisMetaCode == null ? "-" : String(r.diagnosisMetaCode);
+        const httpText = r.diagnosisMetaStatus == null ? "-" : String(r.diagnosisMetaStatus);
+        indexBlock.innerHTML =
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px"><span style="font-size:10px;font-weight:700;color:#7a9ab8">\uC0C9\uC778 \uCD94\uC774</span><span style="font-size:11px;color:#3d5a78">\uC751\uB2F5 \uD655\uC778</span></div><div style="font-size:10px;line-height:1.55;color:#6482a2">HTTP ' +
+          httpText +
+          " / code " +
+          metaCode +
+          "</div>";
+      }
+      card.appendChild(indexBlock);
+      card.addEventListener("mouseenter", function () {
+        card.style.borderColor = col + "66";
+      });
+      card.addEventListener("mouseleave", function () {
+        card.style.borderColor = "#1a2d45";
+        card.style.borderTopColor = col + "33";
+      });
+      card.addEventListener("click", function () {
+        curSite = r.site;
+        switchMode("site");
+      });
+      wrap.appendChild(card);
+    });
+    if (requestId !== allViewReqId || curMode !== "all") return;
+    bdEl.innerHTML = "";
+    bdEl.appendChild(wrap);
+    bdEl.scrollTop = 0;
+  };
   async function loadSiteView(site) {
     if (!site) return;
     const requestId = ++siteViewReqId;

@@ -96,6 +96,21 @@ test("all-sites cards use per-card colors and remove noisy trend badges", () => 
   );
 });
 
+test("top-level all-sites renderer is overridden with diagnosis meta cards", () => {
+  assert.match(
+    runtime,
+    /renderAllSites = async function renderAllSitesPatched\(\) \{/,
+  );
+  assert.match(
+    runtime,
+    /renderAllSites = async function renderAllSitesPatched\(\) \{[\s\S]*?fetchDiagnosisMeta\(site, siteDataBySite\[site\] \|\| null\)[\s\S]*?const allCardColors = \[C\.green, C\.blue, C\.amber, C\.teal, C\.purple\];[\s\S]*?const indexMini = sparkline\([\s\S]*?r\.diagnosisIndexedDates,\s*42,\s*col,/,
+  );
+  assert.doesNotMatch(
+    runtime,
+    /renderAllSites = async function renderAllSitesPatched\(\) \{[\s\S]*?주간추세/,
+  );
+});
+
 test("loader tolerates legacy card template drift and patches cards via DOM cleanup", () => {
   assert.match(
     runtime,
