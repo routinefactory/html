@@ -322,3 +322,10 @@ test("saved tmp html bootstrap initializes both site and all-sites request guard
   assert.match(runtime, /let siteViewReqId = 0;/);
   assert.match(runtime, /let allViewReqId = 0;/);
 });
+
+test("saved tmp html uses dedicated offline all-sites renderer", () => {
+  assert.match(runtime, /function renderSnapshotAllSites\(\) \{/);
+  assert.match(runtime, /\$\{renderSnapshotAllSites\.toString\(\)\}/);
+  assert.doesNotMatch(runtime, /\$\{renderAllSites\.toString\(\)\}/);
+  assert.match(runtime, /Array\.isArray\(EXPORT_PAYLOAD\.summaryRows\) && EXPORT_PAYLOAD\.summaryRows\.length/);
+});

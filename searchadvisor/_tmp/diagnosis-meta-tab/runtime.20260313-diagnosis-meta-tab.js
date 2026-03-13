@@ -875,6 +875,142 @@ function barchart(vals, labels, H, col, unit) {
       pad2(d.getSeconds())
     );
   }
+  async function renderSnapshotAllSites() {
+    const requestId = ++allViewReqId;
+    setAllSitesLabel();
+    bdEl.innerHTML =
+      '<div style="padding:30px 20px;text-align:center;color:#3d5a78">Preparing all-sites snapshot...</div>';
+    if (!allSites.length) {
+      bdEl.innerHTML =
+        '<div style="padding:30px 20px;text-align:center"><div style="font-size:32px">[!]</div><div style="color:#ffca28;font-weight:700;margin:10px 0">No sites available</div></div>';
+      return;
+    }
+    let rows =
+      Array.isArray(EXPORT_PAYLOAD.summaryRows) && EXPORT_PAYLOAD.summaryRows.length
+        ? EXPORT_PAYLOAD.summaryRows.filter(function (row) {
+            return allSites.includes(row.site);
+          })
+        : null;
+    if (!rows || !rows.length) {
+      const sitesToLoad = allSites;
+      const results = await fetchExposeDataBatch(sitesToLoad);
+      if (requestId !== allViewReqId || curMode !== "all") return;
+      rows = sitesToLoad.map(function (site, i) {
+        return results[i].status === "fulfilled"
+          ? buildSiteSummaryRow(site, results[i].value)
+          : buildSiteSummaryRow(site, null);
+      });
+    }
+    rows = rows.slice().sort(function (a, b) {
+      return b.totalC - a.totalC;
+    });
+    window.__sadvRows = rows;
+    buildCombo(rows);
+    const wrap = document.createElement("div");
+    const grandC = rows.reduce(function (acc, row) {
+      return acc + row.totalC;
+    }, 0);
+    const grandE = rows.reduce(function (acc, row) {
+      return acc + row.totalE;
+    }, 0);
+    const avgCtrAll = grandE ? (grandC / grandE) * 100 : 0;
+    wrap.appendChild(
+      kpiGrid([
+        { label: "Total Clicks", value: (grandC / 10000).toFixed(1) + "m", sub: "90d total", color: C.green },
+        { label: "Total Expose", value: (grandE / 10000000).toFixed(1) + "10m", sub: "90d total", color: C.blue },
+        { label: "Avg CTR", value: avgCtrAll.toFixed(2) + "%", sub: "90d avg", color: C.amber },
+        { label: "Active Sites", value: rows.filter(function (row) { return row.totalC > 0; }).length + "", color: C.teal },
+      ]),
+    );
+    wrap.appendChild(
+      secTitle(
+        "Top Clicks " +
+          Math.min(rows.length, 30) +
+          ' <span style="font-size:9px;font-weight:400;color:#3d5a78;letter-spacing:0">90d total</span>',
+      ),
+    );
+    const top30 = rows.slice(0, 30);
+    wrap.appendChild(
+      chartCard(
+        "Top " + top30.length + " Clicks",
+        "",
+        C.green,
+        barchart(
+          top30.map(function (row) { return row.totalC; }),
+          top30.map(function (row) { return getSiteShortName(row.site); }),
+          80,
+          C.green,
+          "",
+        ),
+        top30.map(function (_, i) { return "#" + (i + 1); }),
+      ),
+    );
+    wrap.appendChild(secTitle("Site Details"));
+    rows.forEach(function (r, i) {
+      const col = SITE_COLORS_MAP[r.site] || COLORS[i % COLORS.length];
+      const card = document.createElement("div");
+      card.className = "sadv-allcard";
+      card.style.borderTop = "2px solid " + col + "33";
+      const shortName = getSiteLabel(r.site);
+      const trendCol = r.trend > 0 ? C.green : r.trend < 0 ? C.red : C.sub;
+      const trendIcon = r.trend > 0 ? "up" : r.trend < 0 ? "down" : "flat";
+      const prevBadge =
+        r.prevClickRatio != null
+          ? '<span style="font-size:10px;color:' + (r.prevClickRatio >= 0 ? C.green : C.red) + ";background:" + (r.prevClickRatio >= 0 ? C.green : C.red) + '15;padding:1px 6px;border-radius:10px;margin-left:4px">' + (r.prevClickRatio >= 0 ? "+" : "") + r.prevClickRatio + "%</span>"
+          : "";
+      card.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="width:8px;height:8px;border-radius:50%;background:' +
+        col +
+        ';flex-shrink:0"></div><span style="font-size:12px;font-weight:700;line-height:1.3;color:#e0ecff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">' +
+        shortName +
+        "</span>" +
+        prevBadge +
+        '</div><span style="font-size:11px;line-height:1.2;color:' +
+        trendCol +
+        ';flex-shrink:0">' +
+        trendIcon +
+        '</span></div><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px"><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:' +
+        C.green +
+        '">' +
+        fmt(r.totalC) +
+        '</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">Clicks</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:' +
+        C.blue +
+        '">' +
+        (r.totalE / 10000).toFixed(1) +
+        'w</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">Expose</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:' +
+        C.amber +
+        '">' +
+        r.avgCtr +
+        '%</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">CTR</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:' +
+        trendCol +
+        '">' +
+        fmt(Math.round(r.trend * 7)) +
+        '</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">Trend</div></div></div>';
+      if (r.clicks && r.clicks.length > 1) {
+        const miniDates = (r.logs || []).map(function (log) { return fmtB(log.date); });
+        const mini = sparkline(r.clicks, miniDates, 34, col, "");
+        mini.style.cssText += "opacity:.7";
+        card.appendChild(mini);
+      }
+      card.addEventListener("mouseenter", function () {
+        card.style.borderColor = col + "66";
+      });
+      card.addEventListener("mouseleave", function () {
+        card.style.borderColor = "#1a2d45";
+        card.style.borderTopColor = col + "33";
+      });
+      card.addEventListener("click", function () {
+        curSite = r.site;
+        switchMode("site");
+      });
+      wrap.appendChild(card);
+    });
+    if (requestId !== allViewReqId || curMode !== "all") return;
+    bdEl.innerHTML = "";
+    bdEl.appendChild(wrap);
+    bdEl.scrollTop = 0;
+    __sadvNotify();
+  }
   function buildSnapshotHtml(savedAt, payload) {
     const clone = p.cloneNode(true);
     clone.style.setProperty("display", "flex");
@@ -1095,7 +1231,7 @@ function barchart(vals, labels, H, col, unit) {
     \${renderTab.toString()}
     \${switchMode.toString()}
     \${setAllSitesLabel.toString()}
-    \${renderAllSites.toString()}
+    \${renderSnapshotAllSites.toString()}
     \${loadSiteView.toString()}
     async function fetchExposeData(site) {
       return (
