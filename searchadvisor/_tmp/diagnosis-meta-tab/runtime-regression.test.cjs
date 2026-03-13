@@ -133,5 +133,21 @@ test("saved tmp html can fall back to direct site mode activation", () => {
   assert.ok(runtime.includes("function activateMode(mode) {"));
   assert.ok(runtime.includes("if (afterMode !== mode && typeof switchMode === 'function') {"));
   assert.ok(runtime.includes("switchMode(mode);"));
-  assert.ok(runtime.includes("if (site && typeof switchMode === 'function') switchMode('site');"));
+  assert.ok(runtime.includes("if (site) activateMode('site');"));
+});
+
+test("saved tmp html can fall back to direct tab activation", () => {
+  assert.ok(runtime.includes("function activateTab(tab) {"));
+  assert.ok(runtime.includes("if (afterTab !== tab && typeof setTab === 'function') {"));
+  assert.ok(runtime.includes("setTab(tab);"));
+});
+
+test("legacy runtime exposes direct tab activation and merge-aware site labels", () => {
+  assert.ok(runtime.includes("function setTab(tab) {"));
+  assert.ok(runtime.includes("labelEl.innerHTML = \\`<span>\\${getSiteLabel(site)}</span>\\`;"));
+  assert.ok(
+    runtime.includes(
+      'const searchTarget = ((el.dataset.site || "") + " " + getSiteLabel(el.dataset.site || "")).toLowerCase();',
+    ),
+  );
 });

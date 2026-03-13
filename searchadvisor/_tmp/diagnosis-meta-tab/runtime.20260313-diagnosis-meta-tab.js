@@ -1095,15 +1095,21 @@ function barchart(vals, labels, H, col, unit) {\r
     tabsEl.innerHTML = TABS.map(function (t) {\r
       return '<button class="sadv-t' + (t.id === curTab ? " on" : "") + '" data-t="' + t.id + '">' + t.label + "</button>";\r
     }).join("");\r
-    tabsEl.addEventListener("click", function (e) {\r
-      const t = e.target.closest("[data-t]");\r
-      if (!t || t.dataset.t === curTab) return;\r
-      curTab = t.dataset.t;\r
+    function setTab(tab) {\r
+      if (!tab || tab === curTab) return;\r
+      const t = tabsEl.querySelector(\`[data-t="\${tab}"]\`);\r
+      if (!t) return;\r
+      curTab = tab;\r
       tabsEl.querySelectorAll(".sadv-t").forEach(function (b) {\r
         b.classList.remove("on");\r
       });\r
       t.classList.add("on");\r
       if (window.__sadvR) renderTab(window.__sadvR);\r
+    }\r
+    tabsEl.addEventListener("click", function (e) {\r
+      const t = e.target.closest("[data-t]");\r
+      if (!t) return;\r
+      setTab(t.dataset.t);\r
     });\r
     document.getElementById("sadv-combo-btn").addEventListener("click", function (e) {\r
       e.stopPropagation();\r
@@ -1119,7 +1125,8 @@ function barchart(vals, labels, H, col, unit) {\r
             inp.oninput = function () {\r
               const q = inp.value.toLowerCase();\r
               document.querySelectorAll(".sadv-combo-item").forEach(function (el) {\r
-                el.style.display = !q || el.dataset.site.toLowerCase().includes(q) ? "flex" : "none";\r
+                const searchTarget = ((el.dataset.site || "") + " " + getSiteLabel(el.dataset.site || "")).toLowerCase();\r
+                el.style.display = !q || searchTarget.includes(q) ? "flex" : "none";\r
               });\r
             };\r
           }\r
@@ -1906,7 +1913,7 @@ function barchart(vals, labels, H, col, unit) {\r
   async function loadSiteView(site) {\r
     if (!site) return;\r
     const requestId = ++siteViewReqId;\r
-    labelEl.innerHTML = \`<span>\${site.replace(/^https?:\\/\\//, "")}</span>\`;\r
+    labelEl.innerHTML = \`<span>\${getSiteLabel(site)}</span>\`;\r
     bdEl.innerHTML = \`<div style="padding:50px 20px;text-align:center;color:#3d5a78">⏳ 로딩 중...</div>\`;\r
     const d = await fetchSiteData(site);\r
     if (requestId !== siteViewReqId || site !== curSite) return;\r
@@ -3803,6 +3810,17 @@ Error generating stack: `+C.message+`
       switchMode(mode);
     }
   }
+  function activateTab(tab) {
+    const before = q('#sadv-tabs .sadv-t.on');
+    const beforeTab = before ? before.getAttribute('data-t') : 'overview';
+    const legacyButton = hiddenTab(tab);
+    if (legacyButton) legacyButton.click();
+    const after = q('#sadv-tabs .sadv-t.on');
+    const afterTab = after ? after.getAttribute('data-t') : beforeTab;
+    if (afterTab !== tab && typeof setTab === 'function') {
+      setTab(tab);
+    }
+  }
   function pickerPanel() {
     return q('[data-sadvx="site-panel"]', shell);
   }
@@ -3899,8 +3917,7 @@ Error generating stack: `+C.message+`
   qa('[data-sadvx-tab]', shell).forEach(function (button) {
     button.addEventListener('click', function () {
       const tab = button.getAttribute('data-sadvx-tab');
-      const legacyButton = hiddenTab(tab);
-      if (legacyButton) legacyButton.click();
+      activateTab(tab);
       syncShell();
     });
   });
@@ -3931,7 +3948,7 @@ Error generating stack: `+C.message+`
       const site = button.getAttribute('data-sadvx-site');
       closePicker();
       if (site && typeof setComboSite === 'function') setComboSite(site);
-      if (site && typeof switchMode === 'function') switchMode('site');
+      if (site) activateMode('site');
       if (searchInput) searchInput.value = '';
       qa('[data-sadvx-site]', shell).forEach(function (item) {
         item.style.display = 'flex';
