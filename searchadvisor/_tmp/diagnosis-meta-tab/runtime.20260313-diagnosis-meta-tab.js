@@ -1098,6 +1098,7 @@ function barchart(vals, labels, H, col, unit) {
     bdEl.innerHTML = "";
     bdEl.appendChild(wrap);
     bdEl.scrollTop = 0;
+    if (typeof notifySnapshotShellState === "function") notifySnapshotShellState();
     __sadvNotify();
   }
   function buildSnapshotShellState(payload) {
@@ -1151,70 +1152,34 @@ function barchart(vals, labels, H, col, unit) {
     return [
       "(function () {",
       '  const host = document.getElementById("sadv-react-shell-host");',
-      "  if (!host) return;",
-      "  const shellStateSource = window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__ || {};",
-      "  const snapshotState = {",
-      '    accountLabel: shellStateSource.accountLabel || "",',
-      "    allSites: Array.isArray(shellStateSource.allSites) ? shellStateSource.allSites.slice() : [],",
-      "    rows: Array.isArray(shellStateSource.rows) ? shellStateSource.rows.slice() : [],",
-      '    siteMeta: shellStateSource.siteMeta && typeof shellStateSource.siteMeta === "object" ? shellStateSource.siteMeta : {},',
-      '    curMode: shellStateSource.curMode === "site" ? "site" : "all",',
-      '    curSite: typeof shellStateSource.curSite === "string" ? shellStateSource.curSite : null,',
-      '    curTab: typeof shellStateSource.curTab === "string" ? shellStateSource.curTab : "overview",',
-      '    runtimeVersion: shellStateSource.runtimeVersion || "snapshot",',
-      "    cacheMeta: shellStateSource.cacheMeta",
-      "      ? {",
-      '          label: shellStateSource.cacheMeta.label || "snapshot",',
-      "          updatedAt: shellStateSource.cacheMeta.updatedAt ? new Date(shellStateSource.cacheMeta.updatedAt) : null,",
-      '          remainingMs: typeof shellStateSource.cacheMeta.remainingMs === "number" ? shellStateSource.cacheMeta.remainingMs : null,',
-      '          sourceCount: typeof shellStateSource.cacheMeta.sourceCount === "number" ? shellStateSource.cacheMeta.sourceCount : (Array.isArray(shellStateSource.allSites) ? shellStateSource.allSites.length : 0),',
-      '          measuredAt: typeof shellStateSource.cacheMeta.measuredAt === "number" ? shellStateSource.cacheMeta.measuredAt : Date.now(),',
-      "        }",
-      "      : null,",
-      "  };",
-      '  const shadow = host.shadowRoot || host.attachShadow({ mode: "open" });',
-      '  const sourceStyle = document.getElementById("sadv-react-style");',
-      '  let shadowStyle = shadow.getElementById("sadv-react-style-shadow");',
-      "  if (!shadowStyle) {",
-      '    shadowStyle = document.createElement("style");',
-      '    shadowStyle.id = "sadv-react-style-shadow";',
-      "    shadow.appendChild(shadowStyle);",
-      "  }",
-      '  if (sourceStyle instanceof HTMLStyleElement) shadowStyle.textContent = sourceStyle.textContent || "";',
-      '  let portal = shadow.getElementById("sadv-react-portal-root");',
+      "  const snapshotApi = window.__SEARCHADVISOR_SNAPSHOT_API__ || null;",
+      "  if (!host || !snapshotApi) return;",
+      '  host.setAttribute("style", "display:block !important;width:100% !important;flex-shrink:0;");',
+      '  let portal = host.querySelector("#sadv-react-portal-root");',
       "  if (!portal) {",
       '    portal = document.createElement("div");',
       '    portal.id = "sadv-react-portal-root";',
-      "    shadow.appendChild(portal);",
+      "    host.appendChild(portal);",
       "  }",
-      '  let mount = shadow.getElementById("sadv-react-shell-root");',
+      '  let mount = host.querySelector("#sadv-react-shell-root");',
       "  if (!mount) {",
       '    mount = document.createElement("div");',
       '    mount.id = "sadv-react-shell-root";',
-      "    shadow.appendChild(mount);",
+      "    host.insertBefore(mount, portal);",
       "  }",
-      "  const listeners = new Set();",
-      "  function cloneState() {",
-      "    return {",
-      "      accountLabel: snapshotState.accountLabel,",
-      "      allSites: Array.isArray(snapshotState.allSites) ? snapshotState.allSites.slice() : [],",
-      "      rows: Array.isArray(snapshotState.rows) ? snapshotState.rows.slice() : [],",
-      '      siteMeta: snapshotState.siteMeta && typeof snapshotState.siteMeta === "object" ? snapshotState.siteMeta : {},',
-      '      curMode: snapshotState.curMode === "site" ? "site" : "all",',
-      '      curSite: typeof snapshotState.curSite === "string" ? snapshotState.curSite : null,',
-      '      curTab: typeof snapshotState.curTab === "string" ? snapshotState.curTab : "overview",',
-      '      runtimeVersion: snapshotState.runtimeVersion || "snapshot",',
-      "      cacheMeta: snapshotState.cacheMeta",
-      "        ? {",
-      '            label: snapshotState.cacheMeta.label || "snapshot",',
-      "            updatedAt: snapshotState.cacheMeta.updatedAt instanceof Date ? snapshotState.cacheMeta.updatedAt : null,",
-      '            remainingMs: typeof snapshotState.cacheMeta.remainingMs === "number" ? snapshotState.cacheMeta.remainingMs : null,',
-      '            sourceCount: typeof snapshotState.cacheMeta.sourceCount === "number" ? snapshotState.cacheMeta.sourceCount : snapshotState.allSites.length,',
-      '            measuredAt: typeof snapshotState.cacheMeta.measuredAt === "number" ? snapshotState.cacheMeta.measuredAt : Date.now(),',
-      "          }",
-      "        : null,",
-      "    };",
+      "  const previousUnmount = window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;",
+      '  if (typeof previousUnmount === "function") {',
+      "    try { previousUnmount(); } catch (_) {}",
       "  }",
+      "  const root = Sy.createRoot(mount);",
+      "  window.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__ = root;",
+      "  window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__ = function () {",
+      "    try { root.unmount(); } catch (_) {}",
+      "    if (window.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__ === root) delete window.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__;",
+      "    delete window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;",
+      "  };",
+      '  root.render(Y.jsx(H.StrictMode, { children: Y.jsx(tS, { api: snapshotApi, portalContainer: portal }) }));',
+      "  return;",
       "  function notify() {",
       "    const nextState = cloneState();",
       "    listeners.forEach(function (listener) {",
@@ -1305,6 +1270,121 @@ function barchart(vals, labels, H, col, unit) {
       "})();",
     ].join("\\n");
   }
+  function buildSnapshotApiCompatScript() {
+    return [
+      "(function () {",
+      "  if (window.__SEARCHADVISOR_SNAPSHOT_API__) return;",
+      "  const shellStateSource = window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__ || {};",
+      "  const snapshotState = {",
+      '    accountLabel: shellStateSource.accountLabel || "",',
+      "    allSites: Array.isArray(shellStateSource.allSites) ? shellStateSource.allSites.slice() : [],",
+      "    rows: Array.isArray(shellStateSource.rows) ? shellStateSource.rows.slice() : [],",
+      '    siteMeta: shellStateSource.siteMeta && typeof shellStateSource.siteMeta === "object" ? shellStateSource.siteMeta : {},',
+      '    curMode: shellStateSource.curMode === "site" ? "site" : "all",',
+      '    curSite: typeof shellStateSource.curSite === "string" ? shellStateSource.curSite : null,',
+      '    curTab: typeof shellStateSource.curTab === "string" ? shellStateSource.curTab : "overview",',
+      '    runtimeVersion: shellStateSource.runtimeVersion || "snapshot",',
+      "    cacheMeta: shellStateSource.cacheMeta",
+      "      ? {",
+      '          label: shellStateSource.cacheMeta.label || "snapshot",',
+      "          updatedAt: shellStateSource.cacheMeta.updatedAt ? new Date(shellStateSource.cacheMeta.updatedAt) : null,",
+      '          remainingMs: typeof shellStateSource.cacheMeta.remainingMs === "number" ? shellStateSource.cacheMeta.remainingMs : null,',
+      '          sourceCount: typeof shellStateSource.cacheMeta.sourceCount === "number" ? shellStateSource.cacheMeta.sourceCount : (Array.isArray(shellStateSource.allSites) ? shellStateSource.allSites.length : 0),',
+      '          measuredAt: typeof shellStateSource.cacheMeta.measuredAt === "number" ? shellStateSource.cacheMeta.measuredAt : Date.now(),',
+      "        }",
+      "      : null,",
+      "  };",
+      "  const listeners = new Set();",
+      "  function cloneState() {",
+      "    return {",
+      "      accountLabel: snapshotState.accountLabel,",
+      "      allSites: Array.isArray(snapshotState.allSites) ? snapshotState.allSites.slice() : [],",
+      "      rows: Array.isArray(snapshotState.rows) ? snapshotState.rows.slice() : [],",
+      '      siteMeta: snapshotState.siteMeta && typeof snapshotState.siteMeta === "object" ? snapshotState.siteMeta : {},',
+      '      curMode: snapshotState.curMode === "site" ? "site" : "all",',
+      '      curSite: typeof snapshotState.curSite === "string" ? snapshotState.curSite : null,',
+      '      curTab: typeof snapshotState.curTab === "string" ? snapshotState.curTab : "overview",',
+      '      runtimeVersion: snapshotState.runtimeVersion || "snapshot",',
+      "      cacheMeta: snapshotState.cacheMeta",
+      "        ? {",
+      '            label: snapshotState.cacheMeta.label || "snapshot",',
+      "            updatedAt: snapshotState.cacheMeta.updatedAt instanceof Date ? snapshotState.cacheMeta.updatedAt : null,",
+      '            remainingMs: typeof snapshotState.cacheMeta.remainingMs === "number" ? snapshotState.cacheMeta.remainingMs : null,',
+      '            sourceCount: typeof snapshotState.cacheMeta.sourceCount === "number" ? snapshotState.cacheMeta.sourceCount : snapshotState.allSites.length,',
+      '            measuredAt: typeof snapshotState.cacheMeta.measuredAt === "number" ? snapshotState.cacheMeta.measuredAt : Date.now(),',
+      "          }",
+      "        : null,",
+      "    };",
+      "  }",
+      "  function notify() {",
+      "    const nextState = cloneState();",
+      "    listeners.forEach(function (listener) {",
+      "      try { listener(nextState); } catch (_) {}",
+      "    });",
+      "  }",
+      "  function getSiteShortName(site) {",
+      '    if (!site) return "site";',
+      '    if (site.indexOf("https://") === 0) return site.slice(8);',
+      '    if (site.indexOf("http://") === 0) return site.slice(7);',
+      "    return site;",
+      "  }",
+      "  function getSiteLabel(site) {",
+      '    if (!site) return "site";',
+      '    const meta = snapshotState.siteMeta && typeof snapshotState.siteMeta === "object" ? snapshotState.siteMeta[site] || null : null;',
+      '    const label = meta ? (meta.displayLabel || meta.label || meta.shortName || "").trim() : "";',
+      "    return label || getSiteShortName(site);",
+      "  }",
+      "  function resolveSiteFromLegacyLabel(labelText) {",
+      '    const trimmed = (labelText || "").trim();',
+      "    if (!trimmed) return null;",
+      "    const exact = snapshotState.allSites.find(function (site) {",
+      "      return site === trimmed || getSiteShortName(site) === trimmed || getSiteLabel(site) === trimmed;",
+      "    });",
+      "    if (exact) return exact;",
+      "    const normalized = trimmed.toLowerCase();",
+      "    return snapshotState.allSites.find(function (site) {",
+      "      return site.toLowerCase() === normalized || getSiteShortName(site).toLowerCase() === normalized || getSiteLabel(site).toLowerCase() === normalized;",
+      "    }) || null;",
+      "  }",
+      "  function syncFromLegacy() {",
+      '    const activeMode = document.querySelector("#sadv-mode-bar .sadv-mode.on");',
+      '    const activeTab = document.querySelector("#sadv-tabs .sadv-t.on");',
+      '    const comboLabel = document.getElementById("sadv-combo-label");',
+      '    const siteLabel = document.querySelector("#sadv-site-label span") || document.getElementById("sadv-site-label");',
+      "    if (activeMode) snapshotState.curMode = activeMode.getAttribute('data-m') === 'site' ? 'site' : 'all';",
+      "    if (activeTab) snapshotState.curTab = activeTab.getAttribute('data-t') || 'overview';",
+      "    const resolvedSite =",
+      '      resolveSiteFromLegacyLabel(comboLabel ? comboLabel.textContent : "") ||',
+      '      resolveSiteFromLegacyLabel(siteLabel ? siteLabel.textContent : "") ||',
+      "      snapshotState.curSite ||",
+      "      snapshotState.allSites[0] ||",
+      "      null;",
+      "    snapshotState.curSite = resolvedSite;",
+      "    notify();",
+      "  }",
+      "  function scheduleSync() { Promise.resolve().then(syncFromLegacy); }",
+      "  const api = {",
+      "    getState: cloneState,",
+      "    isReady: function () { return true; },",
+      "    waitUntilReady: function () { return Promise.resolve(true); },",
+      "    subscribe: function (listener) { listeners.add(listener); return function () { listeners.delete(listener); }; },",
+      '    switchMode: function (mode) { if (typeof switchMode === "function") switchMode(mode); else { const button = document.querySelector("#sadv-mode-bar [data-m=\\"" + mode + "\\"]"); if (button) button.click(); } scheduleSync(); },',
+      '    setSite: function (site) { if (typeof setComboSite === "function") setComboSite(site); else { const items = Array.from(document.querySelectorAll(".sadv-combo-item")); const button = items.find(function (item) { return (item.getAttribute("data-site") || "") === site; }); if (button) button.click(); } if (typeof switchMode === "function") switchMode("site"); scheduleSync(); },',
+      '    setTab: function (tab) { if (typeof setTab === "function") setTab(tab); else { const button = document.querySelector("#sadv-tabs [data-t=\\"" + tab + "\\"]"); if (button) button.click(); } scheduleSync(); },',
+      '    refresh: function () { alert("저장된 HTML은 정적 스냅샷입니다. 원본 패널에서 다시 갱신해 주세요."); },',
+      '    download: function () { alert("저장된 HTML 파일에서는 다시 저장할 수 없습니다. 원본 패널에서 다시 저장해 주세요."); },',
+      '    close: function () { const unmountShell = window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__; if (typeof unmountShell === "function") { try { unmountShell(); } catch (_) {} } const panel = document.getElementById("sadv-p"); if (panel) panel.remove(); const meta = document.querySelector(".snapshot-meta"); if (meta) meta.remove(); const host = document.getElementById("sadv-react-shell-host"); if (host) host.remove(); delete window.__SEARCHADVISOR_SNAPSHOT_API__; delete window.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__; },',
+      "  };",
+      "  window.__SEARCHADVISOR_SNAPSHOT_API__ = api;",
+      '  const target = document.getElementById("sadv-p") || document.body;',
+      '  if (target && typeof MutationObserver === "function") {',
+      "    const observer = new MutationObserver(function () { scheduleSync(); });",
+      "    observer.observe(target, { subtree: true, childList: true, attributes: true, characterData: true });",
+      "  }",
+      "  syncFromLegacy();",
+      "})();",
+    ].join(\"\\\\n\");
+  }
   function injectSnapshotReactShell(html, payload) {
     if (!html.includes('<div id="sadv-bd">')) {
       throw new Error("snapshot panel not found");
@@ -1322,12 +1402,19 @@ function barchart(vals, labels, H, col, unit) {
     html = html.replace('<div id="sadv-bd">', \`<div id="sadv-react-shell-host"></div><div id="sadv-bd">\`);
     html = html.replace(
       "</body>",
-      \`<script>\${gS(buildSnapshotShellBootstrapScript())}<\/script></body>\`,
+      \`<script>\${gS(buildSnapshotApiCompatScript())}<\/script><script>\${gS(buildSnapshotShellBootstrapScript())}<\/script></body>\`,
     );
     return html;
   }
   function buildSnapshotHtml(savedAt, payload) {
     const clone = p.cloneNode(true);
+    clone
+      .querySelectorAll(
+        '#sadv-react-shell-host,#sadv-react-shell-root,#sadv-react-portal-root,[data-sadvx="snapshot-shell"],[data-sadvx-action="top"]',
+      )
+      .forEach(function (node) {
+        node.remove();
+      });
     clone.style.setProperty("display", "flex");
     clone.style.setProperty("visibility", "visible");
     clone.style.setProperty("opacity", "1");
@@ -1470,6 +1557,7 @@ function barchart(vals, labels, H, col, unit) {
             ? state.mergedMeta
             : MERGED_META,
       };
+      if (typeof notifySnapshotShellState === "function") notifySnapshotShellState();
     }
     function getSiteMetaMap() {
       return snapshotShellMetaState && snapshotShellMetaState.siteMeta
@@ -1669,6 +1757,57 @@ function barchart(vals, labels, H, col, unit) {
     let curMode = "all";
     let curSite = EXPORT_PAYLOAD.curSite || (allSites[0] || null);
     let curTab = EXPORT_PAYLOAD.curTab || "overview";
+    const SNAPSHOT_SHELL_LISTENERS = new Set();
+    function cloneSnapshotShellState() {
+      const cacheSavedAtValues = allSites
+        .map(function (site) {
+          const dataBySite = EXPORT_PAYLOAD.dataBySite && EXPORT_PAYLOAD.dataBySite[site];
+          return dataBySite && typeof dataBySite.__cacheSavedAt === "number"
+            ? dataBySite.__cacheSavedAt
+            : null;
+        })
+        .filter(function (value) {
+          return typeof value === "number";
+        });
+      const savedAtValue =
+        EXPORT_PAYLOAD.savedAt && !Number.isNaN(new Date(EXPORT_PAYLOAD.savedAt).getTime())
+          ? new Date(EXPORT_PAYLOAD.savedAt)
+          : null;
+      const updatedAt = cacheSavedAtValues.length
+        ? new Date(Math.max.apply(null, cacheSavedAtValues))
+        : savedAtValue;
+      return {
+        accountLabel: EXPORT_PAYLOAD.accountLabel || "",
+        allSites: Array.isArray(allSites) ? allSites.slice() : [],
+        rows: Array.isArray(window.__sadvRows) ? window.__sadvRows.slice() : [],
+        siteMeta: getSiteMetaMap(),
+        curMode: curMode === "site" ? "site" : "all",
+        curSite: typeof curSite === "string" ? curSite : allSites[0] || null,
+        curTab: TABS.some(function (tab) {
+          return tab.id === curTab;
+        })
+          ? curTab
+          : "overview",
+        runtimeVersion: window.__SEARCHADVISOR_RUNTIME_VERSION__ || "snapshot",
+        cacheMeta: updatedAt
+          ? {
+              label: "snapshot",
+              updatedAt,
+              remainingMs: null,
+              sourceCount: allSites.length,
+              measuredAt: Date.now(),
+            }
+          : null,
+      };
+    }
+    function notifySnapshotShellState() {
+      const nextState = cloneSnapshotShellState();
+      SNAPSHOT_SHELL_LISTENERS.forEach(function (listener) {
+        try {
+          listener(nextState);
+        } catch (e) {}
+      });
+    }
     const SNAPSHOT_UI_STATE_KEY =
       "sadv_snapshot_ui_v1::" +
       String(EXPORT_PAYLOAD.savedAt || "") +
@@ -1734,6 +1873,8 @@ function barchart(vals, labels, H, col, unit) {
       });
       t.classList.add("on");
       if (window.__sadvR) renderTab(window.__sadvR);
+      setCachedUiState();
+      notifySnapshotShellState();
     }
     tabsEl.addEventListener("click", function (e) {
       const t = e.target.closest("[data-t]");
@@ -1771,6 +1912,53 @@ function barchart(vals, labels, H, col, unit) {
       if (!m) return;
       switchMode(m.dataset.m);
     });
+    window.__SEARCHADVISOR_SNAPSHOT_API__ = {
+      getState: cloneSnapshotShellState,
+      isReady: function () {
+        return true;
+      },
+      waitUntilReady: function () {
+        return Promise.resolve(true);
+      },
+      subscribe: function (listener) {
+        SNAPSHOT_SHELL_LISTENERS.add(listener);
+        return function () {
+          SNAPSHOT_SHELL_LISTENERS.delete(listener);
+        };
+      },
+      switchMode: function (mode) {
+        switchMode(mode);
+      },
+      setSite: function (site) {
+        setComboSite(site);
+        if (curMode !== "site") switchMode("site");
+      },
+      setTab: function (tab) {
+        setTab(tab);
+      },
+      refresh: function () {
+        alert("??ν븳 HTML? ?뺤쟻 ?ㅻ깄?룹엯?덈떎. ?먮낯 ?붾㈃?먯꽌 ?꾩껜 ?ъ닔吏????ㅼ떆 ??ν빐二쇱꽭??");
+      },
+      download: function () {
+        alert("??ν븳 HTML ?덉뿉?쒕뒗 ?ㅼ떆 ??ν븷 ???놁뒿?덈떎. ?먮낯 ?붾㈃?먯꽌 ?ㅼ떆 ??ν빐二쇱꽭??");
+      },
+      close: function () {
+        const unmountShell = window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;
+        if (typeof unmountShell === "function") {
+          try {
+            unmountShell();
+          } catch (e) {}
+        }
+        const panel = document.getElementById("sadv-p");
+        if (panel) panel.remove();
+        const meta = document.querySelector(".snapshot-meta");
+        if (meta) meta.remove();
+        const host = document.getElementById("sadv-react-shell-host");
+        if (host) host.remove();
+        delete window.__SEARCHADVISOR_SNAPSHOT_API__;
+        delete window.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__;
+      },
+    };
     assignColors();
     window.__sadvRows = (EXPORT_PAYLOAD.summaryRows || []).filter(function (row) {
       return row && allSites.includes(row.site);
@@ -1781,6 +1969,7 @@ function barchart(vals, labels, H, col, unit) {
     setAllSitesLabel();
     switchMode(INITIAL_MODE);
     applySnapshotReportDecorations();
+    notifySnapshotShellState();
   <\/script>
 </body>
 </html>\`;
@@ -1799,7 +1988,7 @@ function barchart(vals, labels, H, col, unit) {
         },
         { refreshMode: "refresh" },
       );
-      const html = buildSnapshotHtml(savedAt, payload);
+      const html = injectSnapshotReactShell(buildSnapshotHtml(savedAt, payload), payload);
       const fileName =
         "searchadvisor-" +
         accountIdFromLabel(accountLabel) +
@@ -2529,6 +2718,7 @@ function barchart(vals, labels, H, col, unit) {
       el.classList.toggle("active", el.dataset.site === site);
     });
     setCachedUiState();
+    if (typeof notifySnapshotShellState === "function") notifySnapshotShellState();
     if (curMode === "site" && !sameSite) loadSiteView(site);
   }
   document
@@ -2614,6 +2804,7 @@ function barchart(vals, labels, H, col, unit) {
       if (curSite) loadSiteView(curSite);
     }
     setCachedUiState();
+    if (typeof notifySnapshotShellState === "function") notifySnapshotShellState();
   }
   async function fetchExposeDataBatch(sites) {
     const results = [];
@@ -2973,6 +3164,7 @@ function barchart(vals, labels, H, col, unit) {
     const R = buildRenderers(d.expose, d.crawl, d.backlink);
     window.__sadvR = R;
     renderTab(R);
+    if (typeof notifySnapshotShellState === "function") notifySnapshotShellState();
   }
   function buildRenderers(expose, crawlData, backlinkData) {
     const item = (expose && expose.items && expose.items[0]) || {};
@@ -3878,6 +4070,7 @@ function barchart(vals, labels, H, col, unit) {
       if (curSite) loadSiteView(curSite);
     }
     setCachedUiState();
+    if (typeof notifySnapshotShellState === "function") notifySnapshotShellState();
   }`,`    } else {
       siteBar.classList.add("show");
       tabsEl.classList.add("show");
@@ -3885,6 +4078,7 @@ function barchart(vals, labels, H, col, unit) {
       if (curSite) loadSiteView(curSite);
     }
     setCachedUiState();
+    if (typeof notifySnapshotShellState === "function") notifySnapshotShellState();
     __sadvNotify();
   }`),s=patchLegacyRenderTab(s),s=patchLegacyNormalizeSiteData(s),s=patchLegacyFetchSiteData(s),s=patchLegacyTabs(s),s=patchLegacyLoadSiteView(s),s=patchLegacyBuildRenderers(s),s=Ho(s,`    bdEl.innerHTML =
       '<div style="padding:30px 20px;text-align:center;color:#3d5a78">⏳ 전체 데이터 로딩 중...</div>';`,`    const loading = document.createElement("div");
@@ -4037,6 +4231,7 @@ function barchart(vals, labels, H, col, unit) {
       const col = allCardColors[i % allCardColors.length];`),s=Ho(s,`      card.innerHTML = \`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="width:8px;height:8px;border-radius:50%;background:\${col};flex-shrink:0"></div><span style="font-size:12px;font-weight:700;line-height:1.3;color:#e0ecff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">\${shortName}</span>\${prevBadge}</div><span style="font-size:11px;line-height:1.2;color:\${trendCol};flex-shrink:0">\${trendIcon}</span></div><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px"><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.green}">\${fmt(r.totalC)}</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">?대┃</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.blue}">\${(r.totalE / 10000).toFixed(1)}留?/div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">?몄텧</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.amber}">\${r.avgCtr}%</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">CTR</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${trendCol}">\${fmt(Math.round(r.trend * 7))}</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">二쇨컙異붿꽭</div></div></div>\`;`,`      card.innerHTML = \`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="width:8px;height:8px;border-radius:50%;background:\${col};flex-shrink:0;box-shadow:0 0 0 4px \${col}12"></div><span style="font-size:12px;font-weight:700;line-height:1.3;color:#e0ecff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px">\${shortName}</span></div></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:8px"><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.green}">\${fmt(r.totalC)}</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">\uD074\uB9AD</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.blue}">\${(r.totalE / 10000).toFixed(1)}\uB9CC</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">\uB178\uCD9C</div></div><div style="text-align:center;min-width:0"><div style="font-size:13px;font-weight:800;line-height:1.1;color:\${C.amber}">\${r.avgCtr}%</div><div style="font-size:9px;line-height:1.35;color:#6482a2;margin-top:3px">CTR</div></div></div>\`;`),s=Ho(s,`        mini.style.cssText += "opacity:.7";`,`        mini.style.cssText += "opacity:.82";`),s=Ho(s,`    bdEl.innerHTML = "";
     bdEl.appendChild(wrap);
     bdEl.scrollTop = 0;
+    if (typeof notifySnapshotShellState === "function") notifySnapshotShellState();
     __sadvNotify();
   }`,`    if (requestId !== allViewReqId || curMode !== "all") return;
     bdEl.innerHTML = "";
@@ -4118,6 +4313,25 @@ function LS(){
   return[
     "(function () {",
     '  const host = document.getElementById("sadv-react-shell-host");',
+    "  const snapshotApi = window.__SEARCHADVISOR_SNAPSHOT_API__ || null;",
+    "  if (host && snapshotApi) {",
+    '    host.setAttribute("style", "display:block !important;width:100% !important;flex-shrink:0;");',
+    '    let portal = host.querySelector("#sadv-react-portal-root");',
+    "    if (!portal) {",
+    '      portal = document.createElement("div");',
+    '      portal.id = "sadv-react-portal-root";',
+    "      host.appendChild(portal);",
+    "    }",
+    '    let mount = host.querySelector("#sadv-react-shell-root");',
+    "    if (!mount) {",
+    '      mount = document.createElement("div");',
+    '      mount.id = "sadv-react-shell-root";',
+    "      host.insertBefore(mount, portal);",
+    "    }",
+    "    const root = Sy.createRoot(mount);",
+    '    root.render(Y.jsx(H.StrictMode, { children: Y.jsx(tS, { api: snapshotApi, portalContainer: portal }) }));',
+    "    return;",
+    "  }",
     "  if (!host) return;",
     "  const shellStateSource = window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__ || {};",
     "  const snapshotState = {",
@@ -4243,14 +4457,7 @@ function LS(){
   ].join("\\n")
 }
 function kS(a,s){
-  if(!a.includes('<div id="sadv-bd">'))throw new Error("snapshot panel not found");
-  const f=vS(document.getElementById("sadv-react-style")?.textContent||"");
-  const v=q0(s);
-  a=a.replace("</head>",`<style id="sadv-react-style">${f}</style><style id="sadv-snapshot-shell-hide">#sadv-header,#sadv-mode-bar,#sadv-site-bar,#sadv-tabs{display:none !important}#sadv-react-shell-host{display:block !important;width:100% !important;flex-shrink:0}</style></head>`);
-  a=a.replace("<body>",`<body><script>window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=${JSON.stringify(v)};<\/script>`);
-  a=a.replace('<div id="sadv-bd">',`<div id="sadv-react-shell-host"></div><div id="sadv-bd">`);
-  a=a.replace("</body>",`<script>${gS(LS())}<\/script></body>`);
-  return a
+  return injectSnapshotReactShell(a,s)
 }
 let Qh=null;function oS(){Qh||(Qh=iS(nS)),new Function(Qh)();const a=window.__sadvApi;return a?{getState:()=>_0(a.getState()),isReady:()=>!!a.isReady?.(),waitUntilReady:s=>a.waitUntilReady?a.waitUntilReady(s):Promise.resolve(!0),subscribe:s=>a.subscribe(f=>{s(_0(f))}),switchMode:a.switchMode,setSite:a.setSite,setTab:a.setTab,refresh:a.refresh,download:a.download,exportSnapshotData:a.exportSnapshotData,buildLegacySnapshotHtml:(s,f)=>kS(a.buildLegacySnapshotHtml(s,f),f),close:a.close}:null}var eu={},Ps={};/**
  * @license React

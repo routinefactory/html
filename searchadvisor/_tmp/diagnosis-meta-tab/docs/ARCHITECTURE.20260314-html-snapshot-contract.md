@@ -2,7 +2,7 @@
 
 Date: `2026-03-14`
 
-Status: target architecture for saved HTML, reopened HTML, and merged HTML behavior
+Status: adopted architecture for snapshot state/control handoff; new exports use direct snapshot API plus light-DOM shell, while body renderer convergence remains incremental
 
 ## Purpose
 
@@ -11,7 +11,7 @@ This document defines how saved HTML should work so that:
 - live UI changes do not constantly break saved HTML
 - merged HTML stays compatible with newer runtime revisions
 - HTML export is payload-driven instead of DOM-patch-driven
-- one canonical renderer can serve live, saved, and merged flows
+- one canonical control shell and one normalized snapshot state API can serve live, saved, and merged flows
 
 ## The Problem To Solve
 
@@ -38,9 +38,57 @@ Saved HTML should be:
 - one payload
 - one contract version
 - one lightweight shell
-- one canonical renderer
+- one canonical control shell
+- one normalized snapshot state API
 
-The renderer should interpret payload state, not depend on the exact save-time DOM shape.
+The control layer should interpret payload state directly, not depend on the exact save-time DOM shape.
+
+## Decision Summary
+
+This direction is considered the correct long-term architecture.
+
+The system should converge on:
+
+- one canonical state model
+- one payload contract
+- one control-shell contract
+- one snapshot-state contract
+
+It should not keep expanding the number of save-path-specific control shells or view-specific click forks.
+
+## Why This Direction Is Architecturally Correct
+
+### Compatibility
+
+If the stable boundary is the payload contract rather than the saved DOM shape:
+
+- older files remain usable longer
+- merged files are less sensitive to markup drift
+- saved HTML remains interpretable even after visible design changes
+
+### Extensibility
+
+If the renderer reads normalized payload state:
+
+- future tabs or cards can be added without redefining the save format every time
+- CSV and other export targets can reuse the same normalized model
+- merged provenance can evolve through metadata instead of shell rewrites
+
+### Operational simplicity
+
+If live, saved, and merged all share one conceptual renderer:
+
+- debugging becomes simpler
+- regression tests can compare one state model across multiple reopen paths
+- design changes no longer require repeated saved-shell hand patching
+
+### Merge safety
+
+If merged HTML is just another payload source:
+
+- the merger remains a data adapter
+- the runtime remains the renderer
+- compatibility failures become contract failures, not arbitrary DOM failures
 
 ## Core Principle
 
@@ -52,6 +100,21 @@ That means:
 - saved HTML embeds that payload
 - merged HTML embeds a merged payload with provenance metadata
 - reopening HTML runs the same rendering rules against that payload
+
+## What The Current Evidence Shows
+
+As of `2026-03-14`, the working evidence in this lab is:
+
+- a version-correct saved HTML can still look visually different from the live panel
+- a saved HTML can contain valid payload contract markers and still show menu/header drift
+- that drift is produced by the dedicated saved-html shell path, not by missing external UI libraries
+- newly exported snapshots should mount the canonical shell through a direct snapshot API in light DOM
+- compat bridge code may still exist, but it is fallback for older snapshot variants rather than the primary reopen path
+
+This matters because it changes the diagnosis rule:
+
+- visual mismatch in a valid saved file should first be treated as renderer divergence
+- it should not be treated as proof that `lucide`, `shadcn`, or some other asset bundle failed to load
 
 ## Contract Layers
 
@@ -95,19 +158,37 @@ The runtime must expose a stable rendering contract that can:
 
 If live uses one state shape but saved HTML uses an ad-hoc fork, drift is inevitable.
 
+Corollary:
+
+- saved HTML must not invent a second control-state machine for menu, tab, or site switching
+- the top-level shell should read and mutate a snapshot API directly, not infer state back out of rendered DOM
+
 ### Rule 2. Reopen must not depend on hidden mirrored controls
 
 Saved HTML should not rely on shadow DOM controls or duplicated invisible widgets just to keep click logic alive.
 
+Compatibility note:
+
+- temporary hidden body anchors may remain while snapshot-local body renderers converge
+- but the canonical shell must not read those anchors to discover current mode, current tab, or current site
+- if legacy reopen support is needed, a compat bridge may read legacy DOM once and expose a normalized snapshot API for the shell
+- new exports should not depend on shadow-root shell mounting when a direct snapshot API is already present
+
 ### Rule 3. Render from state, not from patched DOM fragments
 
-The renderer should produce visible output from payload state.
+The snapshot control layer should produce visible output from payload state.
 
 It should not require fragile string replacement such as:
 
 - swapping labels by searching specific markup text
 - patching event handlers into previously rendered nodes
 - assuming exact container nesting from an older runtime revision
+
+Corollary:
+
+- `buildSnapshotHtml()` should expose a stable payload contract and a direct snapshot API
+- it may temporarily preserve snapshot-local body renderers while those renderers continue to read payload state directly
+- it should not remain the permanent owner of alternate interaction semantics for top-level shell controls
 
 ### Rule 4. Merged HTML is just another payload source
 
@@ -126,25 +207,45 @@ If old saved HTML variants still exist, compatibility code may remain temporaril
 But the target architecture is:
 
 - payload handoff first
+- snapshot API compat bridge second
 - legacy DOM patching only as fallback for old files
+
+Compatibility note:
+
+- saved-shell-only fixes are acceptable only when they protect already exported files or unblock short-term verification
+- they should not become the main growth path for new features
 
 ## Recommended Snapshot File Contents
 
 Every saved or merged HTML should contain:
 
-1. minimal HTML shell markup
+1. snapshot HTML shell markup
 2. embedded payload JSON
 3. contract version marker
 4. snapshot metadata marker
-5. bootstrap entrypoint
+5. snapshot state API bootstrap
+6. control-shell bootstrap
 
-The bootstrap entrypoint should do this only:
+The bootstrap layer should do this:
 
 1. load payload
 2. validate contract version
-3. initialize state
-4. render current view
-5. attach interactions that mutate state and re-render
+3. initialize snapshot state
+4. expose a direct snapshot API
+5. mount the canonical control shell
+6. attach interactions that mutate state and re-render
+
+The bootstrap layer should not permanently own:
+
+- alternate menu bar markup
+- alternate tab markup
+- alternate site-switch semantics
+- alternate merge-label rendering rules
+
+Allowed during convergence:
+
+- snapshot-local body render functions
+- hidden legacy body anchors that are updated by the snapshot API rather than read by the shell
 
 ## Interaction Model
 
@@ -163,6 +264,12 @@ For example:
 - click a tab -> state tab changes -> render selected tab
 
 This is heavier than manual DOM patching in the short term, but much less fragile over time.
+
+Behavioral expectation:
+
+- live, saved, and merged do not need pixel-perfect implementation identity during migration
+- but they should follow the same conceptual state transitions and render decisions
+- long term, visual and behavioral parity is the target
 
 ## Merge Compatibility Model
 
@@ -202,6 +309,14 @@ This architecture is meant to replace or reduce:
 - duplicated logic between live and saved paths
 - save-path-specific click behavior forks
 
+It also replaces the assumption that:
+
+- cloning the live panel DOM
+- injecting helper functions
+- and preserving interaction through save-shell patches
+
+is a stable enough long-term design. It is not.
+
 ## Migration Direction
 
 ### Stage 1. Freeze the payload contract
@@ -224,6 +339,33 @@ Keep fallback compatibility only where old files still require it.
 
 CSV export should consume the same normalized payload concepts, not a separate scraping path.
 
+### Stage 6. Reach visual and behavioral parity
+
+Remove remaining saved-shell-specific view divergence so that:
+
+- menu structure matches the live model
+- tab switching follows the canonical renderer path
+- saved HTML no longer looks like a second product surface
+
+## Non-Goals
+
+This direction does not require:
+
+- preserving every historical saved-shell quirk forever
+- reproducing old DOM structures exactly
+- making the merger own UI markup decisions
+- keeping save-time DOM cloning as a protected abstraction
+
+## Compatibility And Expansion Guarantees To Aim For
+
+The design should aim to guarantee:
+
+1. design changes in live runtime do not immediately break saved HTML reopen behavior
+2. merged HTML remains readable as long as payload contract compatibility is preserved
+3. saved HTML does not need one-off UI patch updates for ordinary label or layout changes
+4. future output targets can reuse normalized payload state without building a second extraction model
+5. failures are diagnosable as contract mismatches instead of vague click-break regressions
+
 ## Verification Checklist
 
 Any meaningful save-path change should verify all of the following:
@@ -234,6 +376,8 @@ Any meaningful save-path change should verify all of the following:
 4. changing a live UI label or layout does not require a separate saved-HTML logic patch
 5. payload contract markers and contract version markers are present
 6. old compatibility fallback still opens older saved variants if required
+7. a version-correct saved file that still looks different is investigated as renderer drift, not immediately blamed on missing external UI libraries
+8. menu, tab, and site-switch behavior are conceptually aligned across live, saved, and merged reopen paths
 
 ## Relationship To Other Documents
 

@@ -410,28 +410,39 @@ test("saved tmp html direct save forces refresh and merges snapshot meta fallbac
   assert.match(runtime, /function q0\(a\)\{/);
   assert.match(runtime, /accountLabel:a\?\.accountLabel\|\|""/);
   assert.match(runtime, /function kS\(a,s\)\{/);
-  assert.match(runtime, /function LS\(\)\{/);
+  assert.match(runtime, /function buildSnapshotApiCompatScript\(\) \{/);
   assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__/);
-  assert.match(runtime, /gS\(LS\(\)\)/);
+  assert.match(runtime, /if \(window\.__SEARCHADVISOR_SNAPSHOT_API__\) return;/);
+  assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_API__ = api;/);
+  assert.match(runtime, /gS\(buildSnapshotApiCompatScript\(\)\)/);
+  assert.match(runtime, /gS\(buildSnapshotShellBootstrapScript\(\)\)/);
   assert.match(
     runtime,
     /buildLegacySnapshotHtml:\(s,f\)=>kS\(a\.buildLegacySnapshotHtml\(s,f\),f\)/,
   );
 });
 
-test("saved tmp html mounts the live react shell from snapshot state", () => {
+test("saved tmp html mounts the live react shell from a direct snapshot api in a single light-dom path", () => {
   assert.match(runtime, /function kS\(a,s\)\{/);
   assert.match(runtime, /function injectSnapshotReactShell\(html, payload\) \{/);
-  assert.match(runtime, /const shellState = buildSnapshotShellState\(payload\);/);
-  assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=/);
   assert.match(runtime, /const reactShellCss = vS\(document\.getElementById\("sadv-react-style"\)\?\.textContent \|\| ""\);/);
   assert.match(runtime, /<style id="sadv-react-style">/);
   assert.match(runtime, /#sadv-header,#sadv-mode-bar,#sadv-site-bar,#sadv-tabs\{display:none !important\}/);
   assert.match(runtime, /<div id="sadv-react-shell-host"><\/div><div id="sadv-bd">/);
   assert.match(runtime, /buildSnapshotShellBootstrapScript\(\)/);
-  assert.match(runtime, /const root = Sy\.createRoot\(mount\);/);
-  assert.match(runtime, /Y\.jsx\(tS, \{ api: api, portalContainer: portal \}\)/);
-  assert.match(runtime, /if \(typeof setComboSite === "function"\) setComboSite\(site\);/);
+  assert.match(runtime, /const snapshotApi = window\.__SEARCHADVISOR_SNAPSHOT_API__ \|\| null;/);
+  assert.match(runtime, /if \(!host \|\| !snapshotApi\) return;/);
+  assert.match(runtime, /host\.querySelector\("#sadv-react-shell-root"\)/);
+  assert.match(runtime, /const previousUnmount = window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;/);
+  assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__ = function \(\) \{/);
+  assert.match(
+    runtime,
+    /root\.render\(Y\.jsx\(H\.StrictMode, \{ children: Y\.jsx\(tS, \{ api: snapshotApi, portalContainer: portal \}\) \}\)\);/,
+  );
+  assert.match(
+    runtime,
+    /querySelectorAll\(\s*'#sadv-react-shell-host,#sadv-react-shell-root,#sadv-react-portal-root,\[data-sadvx="snapshot-shell"\],\[data-sadvx-action="top"\]'/,
+  );
   assert.match(transformedRuntime, /return html;/);
 });
 
@@ -439,6 +450,10 @@ test("both visible and direct HTML save paths now use refresh semantics", () => 
   assert.match(
     runtime,
     /const payload = await collectExportData\([\s\S]*btn\.textContent = done \+ "\/" \+ total;[\s\S]*\{ refreshMode: "refresh" \}[\s\S]*\);/,
+  );
+  assert.match(
+    runtime,
+    /const html = injectSnapshotReactShell\(buildSnapshotHtml\(savedAt, payload\), payload\);/,
   );
   assert.match(
     runtime,
@@ -460,6 +475,17 @@ test("saved tmp html embeds its own ui state cache helpers", () => {
   assert.match(runtime, /function getUiStateCacheKey\(\) \{/);
   assert.match(runtime, /function getCachedUiState\(\) \{/);
   assert.match(runtime, /function setCachedUiState\(\) \{/);
+});
+
+test("saved tmp html exposes a direct snapshot api for shell state and controls", () => {
+  assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_API__ = \{/);
+  assert.match(runtime, /getState: cloneSnapshotShellState,/);
+  assert.match(runtime, /subscribe: function \(listener\) \{/);
+  assert.match(
+    runtime,
+    /setSite: function \(site\) \{[\s\S]*setComboSite\(site\);[\s\S]*if \(curMode !== "site"\) switchMode\("site"\);[\s\S]*\}/,
+  );
+  assert.match(runtime, /notifySnapshotShellState\(\);/);
 });
 
 test("live runtime routes manual refresh through a shared full-refresh pipeline", () => {
@@ -484,7 +510,7 @@ test("live runtime bootstraps the same full-refresh pipeline when cache is expir
   );
 });
 
-test("saved tmp html uses dedicated offline all-sites renderer", () => {
+test("saved tmp html still uses a snapshot-local all-sites renderer fed by payload state", () => {
   assert.match(runtime, /function renderSnapshotAllSites\(\) \{/);
   assert.match(runtime, /\$\{renderSnapshotAllSites\.toString\(\)\}/);
   assert.doesNotMatch(runtime, /\$\{renderAllSites\.toString\(\)\}/);

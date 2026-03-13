@@ -57,11 +57,24 @@ They should reopen through:
 - a normalized payload
 - a contract version
 - a lightweight shell
-- one canonical renderer
+- one canonical control shell
+- one normalized snapshot state API
+
+Compatibility note:
+
+- when reopening older snapshot markup, a compat bridge may synthesize the snapshot API from legacy DOM/state
+- the shell should still consume only the normalized snapshot API, not legacy DOM directly
+- for newly exported snapshots, the preferred path is direct snapshot API plus one light-DOM shell mount
 
 Authoritative detail:
 
 - `ARCHITECTURE.20260314-html-snapshot-contract.md`
+
+Decision note:
+
+- this is the preferred direction for compatibility, extensibility, and maintenance
+- the payload contract is treated as the stable interface boundary
+- live DOM shape, save-time shell markup, and temporary helper wiring are not treated as stable boundaries
 
 ### Direction C. Merger as data adapter, not renderer owner
 
@@ -206,9 +219,22 @@ The current runtime is still transitional:
 - some legacy compatibility code remains
 - some save-path behavior is still more brittle than the target model
 - merger fallback support still exists for older variants
+- saved HTML can still open with a different visual structure than the live panel even when the payload markers and runtime version are correct
+
+Important interpretation:
+
+- if a freshly exported saved HTML looks visually different from the live panel, treat that first as saved-shell architectural drift
+- do not assume the root cause is missing `lucide`, `shadcn`, CDN assets, or some other external UI library failure unless there is direct evidence
+- current save-path problems are expected to come from the dedicated saved-html shell path until canonical renderer convergence is complete
+
+Implementation preference:
+
+- do not keep adding long-term fixes that only patch the saved-html shell
+- use temporary shell-only fixes only when required for immediate compatibility
+- move new work toward one canonical payload-driven renderer contract
 
 That is acceptable for now, as long as new work moves toward the documented target architecture rather than away from it.
 
 ## One-Sentence Summary
 
-Read this file first, then treat refresh policy, HTML snapshot contract, and merge-script contract as three separate but linked concerns that must converge on one payload-driven, compatibility-aware system.
+Read this file first, then treat refresh policy, HTML snapshot contract, and merge-script contract as three separate but linked concerns that must converge on one payload-driven, compatibility-aware system whose stable boundary is the payload contract, not the save-time DOM.
