@@ -1103,6 +1103,16 @@ function barchart(vals, labels, H, col, unit) {
   }
   function buildSnapshotShellState(payload) {
     const allSites = Array.isArray(payload.allSites) ? payload.allSites.slice() : [];
+    const snapshotTabIds = [
+      "overview",
+      "daily",
+      "queries",
+      "pages",
+      "crawl",
+      "backlink",
+      "diagnosis",
+      "insight",
+    ];
     const cacheSavedAtValues = allSites
       .map(function (site) {
         const dataBySite = payload.dataBySite && payload.dataBySite[site];
@@ -1131,9 +1141,7 @@ function barchart(vals, labels, H, col, unit) {
         typeof payload.curSite === "string"
           ? payload.curSite
           : allSites[0] || null,
-      curTab: TABS.some(function (tab) {
-        return tab.id === payload.curTab;
-      })
+      curTab: snapshotTabIds.indexOf(payload.curTab) !== -1
         ? payload.curTab
         : "overview",
       runtimeVersion: window.__SEARCHADVISOR_RUNTIME_VERSION__ || "snapshot",
@@ -4291,6 +4299,7 @@ function barchart(vals, labels, H, col, unit) {
 `),s}
 function q0(a){
   const s=Array.isArray(a?.allSites)?a.allSites.slice():[];
+  const T=["overview","daily","queries","pages","crawl","backlink","diagnosis","insight"];
   const f=s.map(v=>{
     const p=a?.dataBySite&&a.dataBySite[v];
     return p&&typeof p.__cacheSavedAt=="number"?p.__cacheSavedAt:null
@@ -4304,7 +4313,7 @@ function q0(a){
     siteMeta:a?.siteMeta&&typeof a.siteMeta=="object"?a.siteMeta:{},
     curMode:a?.curMode==="site"?"site":"all",
     curSite:typeof a?.curSite=="string"?a.curSite:s[0]||null,
-    curTab:Array.isArray(TABS)&&TABS.some(S=>S.id===a?.curTab)?a.curTab:"overview",
+    curTab:T.indexOf(a?.curTab)!==-1?a.curTab:"overview",
     runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"snapshot",
     cacheMeta:p?{label:"snapshot",updatedAt:p,remainingMs:null,sourceCount:s.length,measuredAt:Date.now()}:null
   }

@@ -452,6 +452,8 @@ test("saved tmp html mounts the live react shell from a direct snapshot api in a
 test("saved-html export wrapper stays self-contained at the wrapper boundary", () => {
   assert.match(runtime, /function kS\(a,s\)\{/);
   assert.doesNotMatch(runtime, /return injectSnapshotReactShell\(a,s\)/);
+  assert.doesNotMatch(runtime, /function q0\(a\)\{[\s\S]*Array\.isArray\(TABS\)/);
+  assert.match(runtime, /function q0\(a\)\{[\s\S]*const T=\["overview","daily","queries","pages","crawl","backlink","diagnosis","insight"\];/);
   assert.ok(
     runtime.includes(
       'a=a.replace(\r\n    "<body>",\r\n    `<body><script>window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=${JSON.stringify(v)};<\\/script>`',
