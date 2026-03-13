@@ -99,15 +99,15 @@ test("loader tolerates legacy card template drift and patches cards via DOM clea
 
 test("loader tolerates normalizeSiteData declaration drift", () => {
   assert.match(runtime, /function jS\(a,s,f\)\{/);
-  assert.match(runtime, /function qS\(a,s,f,v\)\{/);
+  assert.match(runtime, /function qS\(a,s,f,v,p\)\{/);
   assert.match(runtime, /function \$S\(a,s\)\{/);
   assert.match(runtime, /function eA\(a,s,f,v,p,S\)\{/);
   assert.match(runtime, /function patchLegacyNormalizeSiteData\(a\)\{/);
   assert.match(runtime, /const normalizeSiteData = \(data\) => \{/);
   assert.match(runtime, /const normalizeSiteData=data=>\{/);
   assert.match(runtime, /throw new Error\(`Legacy patch point not found: \$\{f\} declaration`\)/);
-  assert.match(runtime, /throw new Error\(`Legacy patch point not found: \$\{v\} start`\)/);
-  assert.match(runtime, /throw new Error\(`Legacy patch point not found: \$\{v\} end`\)/);
+  assert.match(runtime, /throw new Error\(`Legacy patch point not found: \$\{p\} start`\)/);
+  assert.match(runtime, /throw new Error\(`Legacy patch point not found: \$\{p\} end`\)/);
   assert.match(runtime, /s=patchLegacyNormalizeSiteData\(s\)/);
 });
 
@@ -127,7 +127,8 @@ test("loader patches fetchSiteData and TABS via structural helpers", () => {
   assert.match(runtime, /function patchLegacyTabs\(a\)\{/);
   assert.match(runtime, /eA\(a,\["  async function fetchSiteData\(site\) \{"/);
   assert.match(runtime, /eA\(a,\["  const TABS = \[","  let TABS = \[","  var TABS = \["\],s,"\[","\]","TABS"\)/);
-  assert.match(runtime, /s=patchLegacyFetchSiteData\(s\),s=patchLegacyTabs\(s\),s=Ho\(s,`  function buildRenderers/);
+  assert.match(runtime, /function patchLegacyBuildRenderers\(a\)\{/);
+  assert.match(runtime, /s=patchLegacyFetchSiteData\(s\),s=patchLegacyTabs\(s\),s=patchLegacyBuildRenderers\(s\),s=Ho\(s,`    bdEl\.innerHTML =/);
   assert.doesNotMatch(
     runtime,
     /s=Ho\(s,`  async function fetchSiteData\(site\) \{/,
@@ -136,6 +137,36 @@ test("loader patches fetchSiteData and TABS via structural helpers", () => {
     runtime,
     /s=Ho\(s,`  const TABS = \[/,
   );
+  assert.doesNotMatch(
+    runtime,
+    /s=Ho\(s,`  function buildRenderers\(expose, crawlData, backlinkData\) \{/,
+  );
+  assert.doesNotMatch(
+    runtime,
+    /s=Ho\(s,`      insight: function \(\) \{/,
+  );
+});
+
+test("loader transform executes successfully against embedded legacy source", () => {
+  const nSStart = runtime.indexOf("const nS=`");
+  const nSEnd = runtime.indexOf(",lS=", nSStart);
+  const hoStart = runtime.indexOf("function Ho(", nSEnd);
+  const oSStart = runtime.indexOf("function oS()", hoStart);
+  assert.notEqual(nSStart, -1);
+  assert.notEqual(nSEnd, -1);
+  assert.notEqual(hoStart, -1);
+  assert.notEqual(oSStart, -1);
+  const evalCode =
+    runtime.slice(nSStart, nSEnd) +
+    ";\n" +
+    runtime.slice(hoStart, oSStart) +
+    "\nreturn iS(nS);";
+  const transformed = new Function(evalCode)();
+  assert.match(
+    transformed,
+    /function buildRenderers\(expose, crawlData, backlinkData, diagnosisMeta, diagnosisMetaStatus, diagnosisMetaRange\) \{/,
+  );
+  assert.match(transformed, /diagnosis: function \(\) \{/);
 });
 
 test("saved tmp html exposes merge-aware export hooks", () => {
