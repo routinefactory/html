@@ -3792,6 +3792,17 @@ Error generating stack: `+C.message+`
   function hiddenTab(tab) {
     return q('#sadv-tabs [data-t="' + tab + '"]');
   }
+  function activateMode(mode) {
+    const before = q('#sadv-mode-bar .sadv-mode.on');
+    const beforeMode = before ? before.getAttribute('data-m') : 'all';
+    const legacyButton = hiddenMode(mode);
+    if (legacyButton) legacyButton.click();
+    const after = q('#sadv-mode-bar .sadv-mode.on');
+    const afterMode = after ? after.getAttribute('data-m') : beforeMode;
+    if (afterMode !== mode && typeof switchMode === 'function') {
+      switchMode(mode);
+    }
+  }
   function pickerPanel() {
     return q('[data-sadvx="site-panel"]', shell);
   }
@@ -3880,8 +3891,7 @@ Error generating stack: `+C.message+`
   qa('[data-sadvx-mode]', shell).forEach(function (button) {
     button.addEventListener('click', function () {
       const mode = button.getAttribute('data-sadvx-mode');
-      const legacyButton = hiddenMode(mode);
-      if (legacyButton) legacyButton.click();
+      activateMode(mode);
       closePicker();
       syncShell();
     });
@@ -3921,6 +3931,7 @@ Error generating stack: `+C.message+`
       const site = button.getAttribute('data-sadvx-site');
       closePicker();
       if (site && typeof setComboSite === 'function') setComboSite(site);
+      if (site && typeof switchMode === 'function') switchMode('site');
       if (searchInput) searchInput.value = '';
       qa('[data-sadvx-site]', shell).forEach(function (item) {
         item.style.display = 'flex';

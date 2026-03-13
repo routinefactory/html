@@ -128,3 +128,10 @@ test("saved tmp html uses merge-aware shell state and label matching", () => {
   );
   assert.ok(runtime.includes("const searchTarget = (site + ' ' + getSiteLabel(site)).toLowerCase();"));
 });
+
+test("saved tmp html can fall back to direct site mode activation", () => {
+  assert.ok(runtime.includes("function activateMode(mode) {"));
+  assert.ok(runtime.includes("if (afterMode !== mode && typeof switchMode === 'function') {"));
+  assert.ok(runtime.includes("switchMode(mode);"));
+  assert.ok(runtime.includes("if (site && typeof switchMode === 'function') switchMode('site');"));
+});
