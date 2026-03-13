@@ -109,6 +109,13 @@ test("loader tolerates normalizeSiteData declaration drift", () => {
   assert.match(runtime, /s=patchLegacyNormalizeSiteData\(s\)/);
 });
 
+test("runtime does not keep identity result patch anchors", () => {
+  assert.doesNotMatch(
+    runtime,
+    /s=Ho\(s,`        const result = \{\s+expose,\s+crawl: null,\s+backlink: null,\s+detailLoaded: false,\s+\};`,`        const result = \{\s+expose,\s+crawl: null,\s+backlink: null,\s+detailLoaded: false,\s+\};`\)/,
+  );
+});
+
 test("saved tmp html exposes merge-aware export hooks", () => {
   assert.match(runtime, /window\.__SEARCHADVISOR_EXPORT_PAYLOAD__ = EXPORT_PAYLOAD;/);
   assert.match(runtime, /const SITE_META_MAP = EXPORT_PAYLOAD\.siteMeta \|\| \{\};/);

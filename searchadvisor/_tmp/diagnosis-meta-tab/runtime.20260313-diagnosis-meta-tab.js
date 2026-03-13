@@ -2828,17 +2828,7 @@ function barchart(vals, labels, H, col, unit) {
             ? normalizeSiteData(res.value)
             : { expose: null, crawl: null, backlink: null, detailLoaded: false };`,`          res.status === "fulfilled"
             ? normalizeSiteData(res.value)
-            : { expose: null, crawl: null, backlink: null, detailLoaded: false };`),s=patchLegacyNormalizeSiteData(s),s=Ho(s,`        const result = {
-          expose,
-          crawl: null,
-          backlink: null,
-          detailLoaded: false,
-        };`,`        const result = {
-          expose,
-          crawl: null,
-          backlink: null,
-          detailLoaded: false,
-        };`),s=Ho(s,`  async function fetchSiteData(site) {
+            : { expose: null, crawl: null, backlink: null, detailLoaded: false };`),s=patchLegacyNormalizeSiteData(s),s=Ho(s,`  async function fetchSiteData(site) {
     const baseData = await fetchExposeData(site);
     if (baseData.detailLoaded) return baseData;
     if (inflightDetail[site]) return inflightDetail[site];
