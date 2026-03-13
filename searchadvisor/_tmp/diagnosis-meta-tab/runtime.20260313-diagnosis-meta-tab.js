@@ -2188,7 +2188,7 @@ function barchart(vals, labels, H, col, unit) {
       siteBar.classList.remove("show");
       tabsEl.classList.remove("show");
       setAllSitesLabel();
-      renderAllSites();
+      renderSnapshotAllSites();
     } else {
       siteBar.classList.add("show");
       tabsEl.classList.add("show");
@@ -2226,7 +2226,7 @@ function barchart(vals, labels, H, col, unit) {
           clearCachedData(curSite);
         }
         buildCombo(window.__sadvRows || null);
-        if (curMode === "all") await renderAllSites();
+        if (curMode === "all") await renderSnapshotAllSites();
         else if (curSite) await loadSiteView(curSite);
         if (curMode === "all") setAllSitesLabel();
       } finally {

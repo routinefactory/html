@@ -411,4 +411,6 @@ test("saved tmp html uses dedicated offline all-sites renderer", () => {
   assert.match(runtime, /\$\{renderSnapshotAllSites\.toString\(\)\}/);
   assert.doesNotMatch(runtime, /\$\{renderAllSites\.toString\(\)\}/);
   assert.match(runtime, /Array\.isArray\(EXPORT_PAYLOAD\.summaryRows\) && EXPORT_PAYLOAD\.summaryRows\.length/);
+  assert.match(runtime, /if \(mode === "all"\) \{[\s\S]*renderSnapshotAllSites\(\);/);
+  assert.match(runtime, /if \(curMode === "all"\) await renderSnapshotAllSites\(\);/);
 });
