@@ -197,6 +197,7 @@ Error generating stack: `+l.message+`
   const SITE_COLORS_MAP = {};
   const SITE_LS_KEY = "sadv_sites_v1";
   const DATA_LS_PREFIX = "sadv_data_v2_";
+  const UI_STATE_LS_KEY = "sadv_ui_state_v1";
   const DATA_TTL = 12 * 60 * 60 * 1000;
   const ALL_SITES_BATCH = 4;
   let TIP = null;
@@ -1571,6 +1572,30 @@ function barchart(vals, labels, H, col, unit) {
   function getSiteDataCacheKey(site) {
     return DATA_LS_PREFIX + getCacheNamespace() + "_" + btoa(site).replace(/=/g, "");
   }
+  function getUiStateCacheKey() {
+    return UI_STATE_LS_KEY + "_" + getCacheNamespace();
+  }
+  function getCachedUiState() {
+    const cached = lsGet(getUiStateCacheKey());
+    if (!cached || typeof cached !== "object") return null;
+    const mode = cached.mode === "site" ? "site" : cached.mode === "all" ? "all" : null;
+    const tab = typeof cached.tab === "string" ? cached.tab : null;
+    const site = typeof cached.site === "string" ? cached.site : null;
+    if (!mode && !tab && !site) return null;
+    return {
+      mode,
+      tab,
+      site,
+    };
+  }
+  function setCachedUiState() {
+    lsSet(getUiStateCacheKey(), {
+      ts: Date.now(),
+      mode: curMode,
+      tab: curTab,
+      site: curSite,
+    });
+  }
   let allSites = [];
   async function loadSiteList(force = false) {
     if (!force) {
@@ -2142,6 +2167,7 @@ function barchart(vals, labels, H, col, unit) {
     document.querySelectorAll(".sadv-combo-item").forEach((el) => {
       el.classList.toggle("active", el.dataset.site === site);
     });
+    setCachedUiState();
     if (curMode === "site" && !sameSite) loadSiteView(site);
   }
   document
@@ -2195,6 +2221,7 @@ function barchart(vals, labels, H, col, unit) {
     curTab = t.dataset.t;
     tabsEl.querySelectorAll(".sadv-t").forEach((b) => b.classList.remove("on"));
     t.classList.add("on");
+    setCachedUiState();
     if (window.__sadvR) renderTab(window.__sadvR);
   });
   function renderTab(R) {
@@ -2225,6 +2252,7 @@ function barchart(vals, labels, H, col, unit) {
       ensureCurrentSite();
       if (curSite) loadSiteView(curSite);
     }
+    setCachedUiState();
   }
   async function fetchExposeDataBatch(sites) {
     const results = [];
@@ -3184,18 +3212,50 @@ function barchart(vals, labels, H, col, unit) {
   }
   await loadSiteList(false);
   assignColors();
+  const cachedUiState = getCachedUiState();
+  let bootMode = "all";
+  let bootSite = null;
   const curSiteMatch = location.search.match(/site=([^&]+)/);
   if (curSiteMatch) {
     const cur = decodeURIComponent(curSiteMatch[1]);
-    if (allSites.includes(cur)) curSite = cur;
+    if (allSites.includes(cur)) {
+      bootSite = cur;
+      bootMode = "site";
+    }
+  } else if (cachedUiState) {
+    if (cachedUiState.site && allSites.includes(cachedUiState.site)) bootSite = cachedUiState.site;
+    if (cachedUiState.mode === "site" && bootSite) bootMode = "site";
+    if (cachedUiState.mode === "all") bootMode = "all";
+    if (
+      cachedUiState.tab &&
+      TABS.some(function (tab) {
+        return tab.id === cachedUiState.tab;
+      })
+    ) {
+      curTab = cachedUiState.tab;
+      tabsEl.querySelectorAll(".sadv-t").forEach(function (btn) {
+        btn.classList.toggle("on", btn.dataset.t === curTab);
+      });
+    }
   }
+  if (bootSite) curSite = bootSite;
   ensureCurrentSite();
   buildCombo(null);
   if (curSite) setComboSite(curSite);
-  setAllSitesLabel();
-  renderAllSites();
+  if (bootMode === "site" && curSite) {
+    curMode = "site";
+    modeBar.querySelectorAll(".sadv-mode").forEach((b) => b.classList.remove("on"));
+    modeBar.querySelector('[data-m="site"]').classList.add("on");
+    siteBar.classList.add("show");
+    tabsEl.classList.add("show");
+    await loadSiteView(curSite);
+  } else {
+    setAllSitesLabel();
+    await renderAllSites();
+  }
+  setCachedUiState();
 })();
-`,lS="sadv_data_v2_",R0=720*60*1e3;function aS(a){return lS+btoa(a).replace(/=/g,"")}function A0(a){try{const s=localStorage.getItem(aS(a));if(!s)return null;const f=JSON.parse(s);return typeof f?.ts=="number"?{ts:f.ts}:null}catch{return null}}function rS(a){const s=Date.now();if(a.curMode==="site"&&a.curSite){const v=A0(a.curSite);return v?{label:a.curSite.replace(/^https?:\/\//,""),updatedAt:v.ts,remainingMs:Math.max(0,v.ts+R0-s),sourceCount:1,measuredAt:s}:null}const f=a.allSites.map(v=>({site:v,record:A0(v)})).filter(v=>!!v.record);return f.length?{label:`전체 ${f.length}개`,updatedAt:Math.max(...f.map(v=>v.record.ts)),remainingMs:Math.max(0,Math.min(...f.map(v=>v.record.ts+R0))-s),sourceCount:f.length,measuredAt:s}:null}function _0(a){return{...a,runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"dev",runtimeLoadedAt:window.__SEARCHADVISOR_RUNTIME_LOADED_AT__||null,cacheMeta:rS(a)}}/* Runtime surgery rule: keep Ho() patch anchors ASCII-only and encode Korean UI text with \\uXXXX escapes. */function Ho(a,s,f){if(a.includes(s))return a.replace(s,f);const v=[s.replace(/\r/g,""),s.replace(/\r/g,"\n"),s.replace(/\n/g,"\r\n"),s.replace(/\n/g,"\\n")];for(const h of v)if(h&&a.includes(h))return a.replace(h,f);if(s.startsWith('      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"'))return a;throw new Error(`Legacy patch point not found: ${s.slice(0,48)}`)}function jS(a,s,f){let v=-1;for(const p of s)if((v=a.indexOf(p))>=0)break;if(v<0)throw new Error(`Legacy patch point not found: ${f} declaration`);return v}function qS(a,s,f,v,p){const S=a.indexOf(s,v);if(S<0)throw new Error(`Legacy patch point not found: ${p} start`);let b=-1,E=0;for(let T=S;T<a.length;T++)if(a[T]===s)E++;else if(a[T]===f&&(E--,E===0)){b=T+1;break}if(b<0)throw new Error(`Legacy patch point not found: ${p} end`);return b}function $S(a,s){for(;s<a.length&&(a[s]===";"||a[s]==="\r"||a[s]==="\n"||a[s]===" "||a[s]==="\t");)s++;return s}function eA(a,s,f,v,p,S){const b=jS(a,s,S),E=qS(a,v,p,b,S),T=$S(a,E);return a.slice(0,b)+f+a.slice(T)}function patchLegacyNormalizeSiteData(a){const s=`  function normalizeSiteData(data) {
+`,lS="sadv_data_v2_",u0x="sadv_ui_state_v1_",R0=720*60*1e3;function aS(a){return lS+btoa(a).replace(/=/g,"")}function A0(a){try{const s=localStorage.getItem(aS(a));if(!s)return null;const f=JSON.parse(s);return typeof f?.ts=="number"?{ts:f.ts}:null}catch{return null}}function rS(a){const s=Date.now();if(a.curMode==="site"&&a.curSite){const v=A0(a.curSite);return v?{label:a.curSite.replace(/^https?:\/\//,""),updatedAt:v.ts,remainingMs:Math.max(0,v.ts+R0-s),sourceCount:1,measuredAt:s}:null}const f=a.allSites.map(v=>({site:v,record:A0(v)})).filter(v=>!!v.record);return f.length?{label:`전체 ${f.length}개`,updatedAt:Math.max(...f.map(v=>v.record.ts)),remainingMs:Math.max(0,Math.min(...f.map(v=>v.record.ts+R0))-s),sourceCount:f.length,measuredAt:s}:null}function _0(a){return{...a,runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"dev",runtimeLoadedAt:window.__SEARCHADVISOR_RUNTIME_LOADED_AT__||null,cacheMeta:rS(a)}}/* Runtime surgery rule: keep Ho() patch anchors ASCII-only and encode Korean UI text with \\uXXXX escapes. */function Ho(a,s,f){if(a.includes(s))return a.replace(s,f);const v=[s.replace(/\r/g,""),s.replace(/\r/g,"\n"),s.replace(/\n/g,"\r\n"),s.replace(/\n/g,"\\n")];for(const h of v)if(h&&a.includes(h))return a.replace(h,f);if(s.startsWith('      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"'))return a;throw new Error(`Legacy patch point not found: ${s.slice(0,48)}`)}function jS(a,s,f){let v=-1;for(const p of s)if((v=a.indexOf(p))>=0)break;if(v<0)throw new Error(`Legacy patch point not found: ${f} declaration`);return v}function qS(a,s,f,v,p){const S=a.indexOf(s,v);if(S<0)throw new Error(`Legacy patch point not found: ${p} start`);let b=-1,E=0;for(let T=S;T<a.length;T++)if(a[T]===s)E++;else if(a[T]===f&&(E--,E===0)){b=T+1;break}if(b<0)throw new Error(`Legacy patch point not found: ${p} end`);return b}function $S(a,s){for(;s<a.length&&(a[s]===";"||a[s]==="\r"||a[s]==="\n"||a[s]===" "||a[s]==="\t");)s++;return s}function eA(a,s,f,v,p,S){const b=jS(a,s,S),E=qS(a,v,p,b,S),T=$S(a,E);return a.slice(0,b)+f+a.slice(T)}function patchLegacyNormalizeSiteData(a){const s=`  function normalizeSiteData(data) {
     if (!data) return null;
     const normalized = {
       expose: "expose" in data ? data.expose ?? null : null,
@@ -3466,12 +3526,14 @@ function barchart(vals, labels, H, col, unit) {
       ensureCurrentSite();
       if (curSite) loadSiteView(curSite);
     }
+    setCachedUiState();
   }`,`    } else {
       siteBar.classList.add("show");
       tabsEl.classList.add("show");
       ensureCurrentSite();
       if (curSite) loadSiteView(curSite);
     }
+    setCachedUiState();
     __sadvNotify();
   }`),s=patchLegacyRenderTab(s),s=patchLegacyNormalizeSiteData(s),s=patchLegacyFetchSiteData(s),s=patchLegacyTabs(s),s=patchLegacyLoadSiteView(s),s=patchLegacyBuildRenderers(s),s=Ho(s,`    bdEl.innerHTML =
       '<div style="padding:30px 20px;text-align:center;color:#3d5a78">⏳ 전체 데이터 로딩 중...</div>';`,`    const loading = document.createElement("div");
@@ -3652,8 +3714,30 @@ function barchart(vals, labels, H, col, unit) {
               crawl: null,
               backlink: null,
               detailLoaded: false,
-            },`),s=Ho(s,`  renderAllSites();
-})();`,`  await renderAllSites();
+            },`),s=Ho(s,`  if (bootMode === "site" && curSite) {
+    curMode = "site";
+    modeBar.querySelectorAll(".sadv-mode").forEach((b) => b.classList.remove("on"));
+    modeBar.querySelector('[data-m="site"]').classList.add("on");
+    siteBar.classList.add("show");
+    tabsEl.classList.add("show");
+    await loadSiteView(curSite);
+  } else {
+    setAllSitesLabel();
+    await renderAllSites();
+  }
+  setCachedUiState();
+})();`,`  if (bootMode === "site" && curSite) {
+    curMode = "site";
+    modeBar.querySelectorAll(".sadv-mode").forEach((b) => b.classList.remove("on"));
+    modeBar.querySelector('[data-m="site"]').classList.add("on");
+    siteBar.classList.add("show");
+    tabsEl.classList.add("show");
+    await loadSiteView(curSite);
+  } else {
+    setAllSitesLabel();
+    await renderAllSites();
+  }
+  setCachedUiState();
   __sadvMarkReady();
 })();`),s=Ho(s,`    let allSites = EXPORT_PAYLOAD.allSites || [];
 `,`    function __sadvNotify() {}

@@ -63,6 +63,10 @@ test("runtime namespaces local cache keys by account identity", () => {
     runtime,
     /function getSiteDataCacheKey\(site\) \{\s+return DATA_LS_PREFIX \+ getCacheNamespace\(\) \+ "_" \+ btoa\(site\)\.replace\(\/=\/g, ""\);\s+\}/,
   );
+  assert.match(
+    runtime,
+    /function getUiStateCacheKey\(\) \{\s+return UI_STATE_LS_KEY \+ "_" \+ getCacheNamespace\(\);\s+\}/,
+  );
 });
 
 test("runtime no longer reads or writes unscoped global cache keys", () => {
@@ -439,4 +443,23 @@ test("legacy normalize patch preserves field-level cache metadata", () => {
   assert.match(runtime, /if \("backlinkFetchState" in data\) normalized\.backlinkFetchState = data\.backlinkFetchState \?\? null;/);
   assert.match(runtime, /if \("backlinkFetchedAt" in data\) normalized\.backlinkFetchedAt = data\.backlinkFetchedAt \?\? null;/);
   assert.match(runtime, /if \("__cacheSavedAt" in data\) normalized\.__cacheSavedAt = data\.__cacheSavedAt \?\? null;/);
+});
+
+test("live runtime persists panel ui state for reopen", () => {
+  assert.match(runtime, /const UI_STATE_LS_KEY = "sadv_ui_state_v1";/);
+  assert.match(runtime, /function getCachedUiState\(\) \{/);
+  assert.match(runtime, /function setCachedUiState\(\) \{/);
+  assert.match(runtime, /mode: curMode,/);
+  assert.match(runtime, /tab: curTab,/);
+  assert.match(runtime, /site: curSite,/);
+});
+
+test("live bootstrap restores site context before eager all-sites preload", () => {
+  assert.match(runtime, /const cachedUiState = getCachedUiState\(\);/);
+  assert.match(runtime, /let bootMode = "all";/);
+  assert.match(runtime, /let bootSite = null;/);
+  assert.match(runtime, /if \(allSites\.includes\(cur\)\) \{\s+bootSite = cur;\s+bootMode = "site";\s+\}/);
+  assert.match(runtime, /if \(cachedUiState\.site && allSites\.includes\(cachedUiState\.site\)\) bootSite = cachedUiState\.site;/);
+  assert.match(runtime, /if \(bootMode === "site" && curSite\) \{\s+curMode = "site";[\s\S]*await loadSiteView\(curSite\);\s+\} else \{\s+setAllSitesLabel\(\);\s+await renderAllSites\(\);\s+\}/);
+  assert.match(runtime, /setCachedUiState\(\);\s+__sadvMarkReady\(\);/);
 });
