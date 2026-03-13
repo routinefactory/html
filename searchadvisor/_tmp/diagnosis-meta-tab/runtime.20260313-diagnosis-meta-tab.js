@@ -4093,7 +4093,166 @@ function barchart(vals, labels, H, col, unit) {
 })();`),s=Ho(s,`    let allSites = EXPORT_PAYLOAD.allSites || [];
 `,`    function __sadvNotify() {}
     let allSites = EXPORT_PAYLOAD.allSites || [];
-`),s}function q0(a){return buildSnapshotShellState(a)}function kS(a,s){return injectSnapshotReactShell(a,s)}let Qh=null;function oS(){Qh||(Qh=iS(nS)),new Function(Qh)();const a=window.__sadvApi;return a?{getState:()=>_0(a.getState()),isReady:()=>!!a.isReady?.(),waitUntilReady:s=>a.waitUntilReady?a.waitUntilReady(s):Promise.resolve(!0),subscribe:s=>a.subscribe(f=>{s(_0(f))}),switchMode:a.switchMode,setSite:a.setSite,setTab:a.setTab,refresh:a.refresh,download:a.download,exportSnapshotData:a.exportSnapshotData,buildLegacySnapshotHtml:(s,f)=>kS(a.buildLegacySnapshotHtml(s,f),f),close:a.close}:null}var eu={},Ps={};/**
+`),s}
+function q0(a){
+  const s=Array.isArray(a?.allSites)?a.allSites.slice():[];
+  const f=s.map(v=>{
+    const p=a?.dataBySite&&a.dataBySite[v];
+    return p&&typeof p.__cacheSavedAt=="number"?p.__cacheSavedAt:null
+  }).filter(v=>typeof v=="number");
+  const v=a?.savedAt&&!Number.isNaN(new Date(a.savedAt).getTime())?new Date(a.savedAt):null;
+  const p=f.length?new Date(Math.max.apply(null,f)):v;
+  return{
+    accountLabel:a?.accountLabel||"",
+    allSites:s,
+    rows:Array.isArray(a?.summaryRows)?a.summaryRows.slice():[],
+    siteMeta:a?.siteMeta&&typeof a.siteMeta=="object"?a.siteMeta:{},
+    curMode:a?.curMode==="site"?"site":"all",
+    curSite:typeof a?.curSite=="string"?a.curSite:s[0]||null,
+    curTab:Array.isArray(TABS)&&TABS.some(S=>S.id===a?.curTab)?a.curTab:"overview",
+    runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"snapshot",
+    cacheMeta:p?{label:"snapshot",updatedAt:p,remainingMs:null,sourceCount:s.length,measuredAt:Date.now()}:null
+  }
+}
+function LS(){
+  return[
+    "(function () {",
+    '  const host = document.getElementById("sadv-react-shell-host");',
+    "  if (!host) return;",
+    "  const shellStateSource = window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__ || {};",
+    "  const snapshotState = {",
+    '    accountLabel: shellStateSource.accountLabel || "",',
+    "    allSites: Array.isArray(shellStateSource.allSites) ? shellStateSource.allSites.slice() : [],",
+    "    rows: Array.isArray(shellStateSource.rows) ? shellStateSource.rows.slice() : [],",
+    '    siteMeta: shellStateSource.siteMeta && typeof shellStateSource.siteMeta === "object" ? shellStateSource.siteMeta : {},',
+    '    curMode: shellStateSource.curMode === "site" ? "site" : "all",',
+    '    curSite: typeof shellStateSource.curSite === "string" ? shellStateSource.curSite : null,',
+    '    curTab: typeof shellStateSource.curTab === "string" ? shellStateSource.curTab : "overview",',
+    '    runtimeVersion: shellStateSource.runtimeVersion || "snapshot",',
+    "    cacheMeta: shellStateSource.cacheMeta",
+    "      ? {",
+    '          label: shellStateSource.cacheMeta.label || "snapshot",',
+    "          updatedAt: shellStateSource.cacheMeta.updatedAt ? new Date(shellStateSource.cacheMeta.updatedAt) : null,",
+    '          remainingMs: typeof shellStateSource.cacheMeta.remainingMs === "number" ? shellStateSource.cacheMeta.remainingMs : null,',
+    '          sourceCount: typeof shellStateSource.cacheMeta.sourceCount === "number" ? shellStateSource.cacheMeta.sourceCount : (Array.isArray(shellStateSource.allSites) ? shellStateSource.allSites.length : 0),',
+    '          measuredAt: typeof shellStateSource.cacheMeta.measuredAt === "number" ? shellStateSource.cacheMeta.measuredAt : Date.now(),',
+    "        }",
+    "      : null,",
+    "  };",
+    '  const shadow = host.shadowRoot || host.attachShadow({ mode: "open" });',
+    '  const sourceStyle = document.getElementById("sadv-react-style");',
+    '  let shadowStyle = shadow.getElementById("sadv-react-style-shadow");',
+    "  if (!shadowStyle) {",
+    '    shadowStyle = document.createElement("style");',
+    '    shadowStyle.id = "sadv-react-style-shadow";',
+    "    shadow.appendChild(shadowStyle);",
+    "  }",
+    '  if (sourceStyle instanceof HTMLStyleElement) shadowStyle.textContent = sourceStyle.textContent || "";',
+    '  let portal = shadow.getElementById("sadv-react-portal-root");',
+    "  if (!portal) {",
+    '    portal = document.createElement("div");',
+    '    portal.id = "sadv-react-portal-root";',
+    "    shadow.appendChild(portal);",
+    "  }",
+    '  let mount = shadow.getElementById("sadv-react-shell-root");',
+    "  if (!mount) {",
+    '    mount = document.createElement("div");',
+    '    mount.id = "sadv-react-shell-root";',
+    "    shadow.appendChild(mount);",
+    "  }",
+    "  const listeners = new Set();",
+    "  function cloneState() {",
+    "    return {",
+    "      accountLabel: snapshotState.accountLabel,",
+    "      allSites: Array.isArray(snapshotState.allSites) ? snapshotState.allSites.slice() : [],",
+    "      rows: Array.isArray(snapshotState.rows) ? snapshotState.rows.slice() : [],",
+    '      siteMeta: snapshotState.siteMeta && typeof snapshotState.siteMeta === "object" ? snapshotState.siteMeta : {},',
+    '      curMode: snapshotState.curMode === "site" ? "site" : "all",',
+    '      curSite: typeof snapshotState.curSite === "string" ? snapshotState.curSite : null,',
+    '      curTab: typeof snapshotState.curTab === "string" ? snapshotState.curTab : "overview",',
+    '      runtimeVersion: snapshotState.runtimeVersion || "snapshot",',
+    "      cacheMeta: snapshotState.cacheMeta",
+    "        ? {",
+    '            label: snapshotState.cacheMeta.label || "snapshot",',
+    "            updatedAt: snapshotState.cacheMeta.updatedAt instanceof Date ? snapshotState.cacheMeta.updatedAt : null,",
+    '            remainingMs: typeof snapshotState.cacheMeta.remainingMs === "number" ? snapshotState.cacheMeta.remainingMs : null,',
+    '            sourceCount: typeof snapshotState.cacheMeta.sourceCount === "number" ? snapshotState.cacheMeta.sourceCount : snapshotState.allSites.length,',
+    '            measuredAt: typeof snapshotState.cacheMeta.measuredAt === "number" ? snapshotState.cacheMeta.measuredAt : Date.now(),',
+    "          }",
+    "        : null,",
+    "    };",
+    "  }",
+    "  function notify() {",
+    "    const nextState = cloneState();",
+    "    listeners.forEach(function (listener) {",
+    "      try { listener(nextState); } catch (_) {}",
+    "    });",
+    "  }",
+    "  function getSiteShortName(site) {",
+    '    if (!site) return "site";',
+    '    if (site.indexOf("https://") === 0) return site.slice(8);',
+    '    if (site.indexOf("http://") === 0) return site.slice(7);',
+    "    return site;",
+    "  }",
+    "  function getSiteLabel(site) {",
+    '    if (!site) return "site";',
+    '    const meta = snapshotState.siteMeta && typeof snapshotState.siteMeta === "object" ? snapshotState.siteMeta[site] || null : null;',
+    '    const label = meta ? (meta.displayLabel || meta.label || meta.shortName || "").trim() : "";',
+    "    return label || getSiteShortName(site);",
+    "  }",
+    "  function resolveSiteFromLegacyLabel(labelText) {",
+    '    const trimmed = (labelText || "").trim();',
+    "    if (!trimmed) return null;",
+    "    const exact = snapshotState.allSites.find(function (site) {",
+    "      return site === trimmed || getSiteShortName(site) === trimmed || getSiteLabel(site) === trimmed;",
+    "    });",
+    "    if (exact) return exact;",
+    "    const normalized = trimmed.toLowerCase();",
+    "    return snapshotState.allSites.find(function (site) {",
+    "      return site.toLowerCase() === normalized || getSiteShortName(site).toLowerCase() === normalized || getSiteLabel(site).toLowerCase() === normalized;",
+    "    }) || null;",
+    "  }",
+    "  function syncFromLegacy() {",
+    '    const activeMode = document.querySelector("#sadv-mode-bar .sadv-mode.on");',
+    '    const activeSite = document.querySelector("#sadv-site-bar .sadv-chip.on");',
+    '    const activeTab = document.querySelector("#sadv-tabs .sadv-tab.on");',
+    "    if (activeMode) snapshotState.curMode = activeMode.dataset.m === \"site\" ? \"site\" : \"all\";",
+    "    const siteText = activeSite ? activeSite.textContent : \"\";",
+    "    const resolvedSite = resolveSiteFromLegacyLabel(siteText);",
+    "    if (resolvedSite) snapshotState.curSite = resolvedSite;",
+    "    if (activeTab && activeTab.dataset.t) snapshotState.curTab = activeTab.dataset.t;",
+    "    notify();",
+    "  }",
+    "  function scheduleSync() { Promise.resolve().then(syncFromLegacy); }",
+    "  const api = {",
+    "    getState: cloneState,",
+    "    isReady: function () { return true; },",
+    "    waitUntilReady: function () { return Promise.resolve(true); },",
+    "    subscribe: function (listener) { listeners.add(listener); return function () { listeners.delete(listener); }; },",
+    '    switchMode: function (mode) { if (typeof switchMode === "function") switchMode(mode); else { const button = document.querySelector("#sadv-mode-bar [data-m=\\"" + mode + "\\"]"); if (button) button.click(); } scheduleSync(); },',
+    '    setSite: function (site) { if (typeof setComboSite === "function") setComboSite(site); if (typeof switchMode === "function") switchMode("site"); scheduleSync(); },',
+    '    setTab: function (tab) { if (typeof setTab === "function") setTab(tab); else { const button = document.querySelector("#sadv-tabs [data-t=\\"" + tab + "\\"]"); if (button) button.click(); } scheduleSync(); },',
+    '    refresh: function () { alert("??ν븳 HTML? ?뺤쟻 ?ㅻ깄?룹엯?덈떎. ?먮낯 ?붾㈃?먯꽌 ?꾩껜 ?ъ닔吏????ㅼ떆 ??ν빐二쇱꽭??"); },',
+    '    download: function () { alert("??ν븳 HTML ?덉뿉?쒕뒗 ?ㅼ떆 ??ν븷 ???놁뒿?덈떎. ?먮낯 ?붾㈃?먯꽌 ?ㅼ떆 ??ν빐二쇱꽭??"); },',
+    '    close: function () { const panel = document.getElementById("sadv-p"); if (panel) panel.remove(); const meta = document.querySelector(".snapshot-meta"); if (meta) meta.remove(); host.remove(); },',
+    "  };",
+    "  syncFromLegacy();",
+    "  const root = Sy.createRoot(mount);",
+    '  root.render(Y.jsx(H.StrictMode, { children: Y.jsx(tS, { api: api, portalContainer: portal }) }));',
+    "})();",
+  ].join("\\n")
+}
+function kS(a,s){
+  if(!a.includes('<div id="sadv-bd">'))throw new Error("snapshot panel not found");
+  const f=vS(document.getElementById("sadv-react-style")?.textContent||"");
+  const v=q0(s);
+  a=a.replace("</head>",`<style id="sadv-react-style">${f}</style><style id="sadv-snapshot-shell-hide">#sadv-header,#sadv-mode-bar,#sadv-site-bar,#sadv-tabs{display:none !important}#sadv-react-shell-host{display:block !important;width:100% !important;flex-shrink:0}</style></head>`);
+  a=a.replace("<body>",`<body><script>window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=${JSON.stringify(v)};<\/script>`);
+  a=a.replace('<div id="sadv-bd">',`<div id="sadv-react-shell-host"></div><div id="sadv-bd">`);
+  a=a.replace("</body>",`<script>${gS(LS())}<\/script></body>`);
+  return a
+}
+let Qh=null;function oS(){Qh||(Qh=iS(nS)),new Function(Qh)();const a=window.__sadvApi;return a?{getState:()=>_0(a.getState()),isReady:()=>!!a.isReady?.(),waitUntilReady:s=>a.waitUntilReady?a.waitUntilReady(s):Promise.resolve(!0),subscribe:s=>a.subscribe(f=>{s(_0(f))}),switchMode:a.switchMode,setSite:a.setSite,setTab:a.setTab,refresh:a.refresh,download:a.download,exportSnapshotData:a.exportSnapshotData,buildLegacySnapshotHtml:(s,f)=>kS(a.buildLegacySnapshotHtml(s,f),f),close:a.close}:null}var eu={},Ps={};/**
  * @license React
  * react-dom-server-legacy.browser.production.js
  *

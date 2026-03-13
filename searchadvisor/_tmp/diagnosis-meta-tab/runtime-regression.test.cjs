@@ -408,15 +408,11 @@ test("saved tmp html direct save forces refresh and merges snapshot meta fallbac
   );
   assert.match(runtime, /const O=a\.buildLegacySnapshotHtml\(S,M\);/);
   assert.match(runtime, /function q0\(a\)\{/);
+  assert.match(runtime, /accountLabel:a\?\.accountLabel\|\|""/);
   assert.match(runtime, /function kS\(a,s\)\{/);
-  assert.match(
-    runtime,
-    /return buildSnapshotShellState\(a\)/,
-  );
-  assert.match(
-    runtime,
-    /return injectSnapshotReactShell\(a,s\)/,
-  );
+  assert.match(runtime, /function LS\(\)\{/);
+  assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__/);
+  assert.match(runtime, /gS\(LS\(\)\)/);
   assert.match(
     runtime,
     /buildLegacySnapshotHtml:\(s,f\)=>kS\(a\.buildLegacySnapshotHtml\(s,f\),f\)/,
