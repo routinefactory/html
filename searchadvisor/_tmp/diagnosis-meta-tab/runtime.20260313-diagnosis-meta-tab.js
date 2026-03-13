@@ -1410,7 +1410,7 @@ function barchart(vals, labels, H, col, unit) {
     html = html.replace('<div id="sadv-bd">', \`<div id="sadv-react-shell-host"></div><div id="sadv-bd">\`);
     html = html.replace(
       "</body>",
-      \`<script>\${gS(buildSnapshotApiCompatScript())}<\/script><script>\${gS(buildSnapshotShellBootstrapScript())}<\/script></body>\`,
+      \`<script>\${gS(buildSnapshotShellBootstrapScript())}<\/script></body>\`,
     );
     return html;
   }

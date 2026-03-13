@@ -410,11 +410,8 @@ test("saved tmp html direct save forces refresh and merges snapshot meta fallbac
   assert.match(runtime, /function q0\(a\)\{/);
   assert.match(runtime, /accountLabel:a\?\.accountLabel\|\|""/);
   assert.match(runtime, /function kS\(a,s\)\{/);
-  assert.match(runtime, /function buildSnapshotApiCompatScript\(\) \{/);
   assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__/);
-  assert.match(runtime, /if \(window\.__SEARCHADVISOR_SNAPSHOT_API__\) return;/);
-  assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_API__ = api;/);
-  assert.match(runtime, /gS\(buildSnapshotApiCompatScript\(\)\)/);
+  assert.doesNotMatch(runtime, /gS\(buildSnapshotApiCompatScript\(\)\)/);
   assert.match(runtime, /gS\(buildSnapshotShellBootstrapScript\(\)\)/);
   assert.match(
     runtime,
@@ -435,6 +432,7 @@ test("saved tmp html mounts the live react shell from a direct snapshot api in a
   assert.match(runtime, /host\.querySelector\("#sadv-react-shell-root"\)/);
   assert.match(runtime, /const previousUnmount = window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;/);
   assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__ = function \(\) \{/);
+  assert.doesNotMatch(runtime, /injectSnapshotReactShell[\s\S]*buildSnapshotApiCompatScript\(\)/);
   assert.match(
     runtime,
     /root\.render\(Y\.jsx\(H\.StrictMode, \{ children: Y\.jsx\(tS, \{ api: snapshotApi, portalContainer: portal \}\) \}\)\);/,
