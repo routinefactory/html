@@ -411,28 +411,31 @@ test("saved tmp html direct save forces refresh and merges snapshot meta fallbac
   assert.match(runtime, /function kS\(a,s\)\{/);
   assert.match(
     runtime,
-    /const reactShellCss = vS\(document\.getElementById\("sadv-react-style"\)\?\.textContent \|\| ""\);/,
+    /return buildSnapshotShellState\(a\)/,
   );
   assert.match(
     runtime,
-    /const f=vS\(document\.getElementById\("sadv-react-style"\)\?\.textContent\|\|""\),v=q0\(s\),p=fS\.renderToStaticMarkup\(Y\.jsx\(wS,\{state:q0\(s\),rows:s\.summaryRows\|\|\[\]\}\)\);/,
+    /return injectSnapshotReactShell\(a,s\)/,
   );
   assert.match(
     runtime,
     /buildLegacySnapshotHtml:\(s,f\)=>kS\(a\.buildLegacySnapshotHtml\(s,f\),f\)/,
   );
-  assert.match(
-    runtime,
-    /a=a\.replace\("<\/body>",`<script>\$\{gS\(SS\(\)\)\}<\\\/script><\/body>`\)/,
-  );
 });
 
-test("saved tmp html injects canonical snapshot shell assets ahead of the offline body", () => {
+test("saved tmp html mounts the live react shell from snapshot state", () => {
   assert.match(runtime, /function kS\(a,s\)\{/);
-  assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=\$\{JSON\.stringify\(v\)\}/);
-  assert.match(runtime, /<style id="sadv-react-style">\$\{f\}<\/style>/);
+  assert.match(runtime, /function injectSnapshotReactShell\(html, payload\) \{/);
+  assert.match(runtime, /const shellState = buildSnapshotShellState\(payload\);/);
+  assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=/);
+  assert.match(runtime, /const reactShellCss = vS\(document\.getElementById\("sadv-react-style"\)\?\.textContent \|\| ""\);/);
+  assert.match(runtime, /<style id="sadv-react-style">/);
   assert.match(runtime, /#sadv-header,#sadv-mode-bar,#sadv-site-bar,#sadv-tabs\{display:none !important\}/);
-  assert.match(runtime, /<div id="sadv-react-shell-root">\$\{p\}<\/div><div id="sadv-bd">/);
+  assert.match(runtime, /<div id="sadv-react-shell-host"><\/div><div id="sadv-bd">/);
+  assert.match(runtime, /buildSnapshotShellBootstrapScript\(\)/);
+  assert.match(runtime, /const root = Sy\.createRoot\(mount\);/);
+  assert.match(runtime, /Y\.jsx\(tS, \{ api: api, portalContainer: portal \}\)/);
+  assert.match(runtime, /if \(typeof setComboSite === "function"\) setComboSite\(site\);/);
   assert.match(transformedRuntime, /return html;/);
 });
 
