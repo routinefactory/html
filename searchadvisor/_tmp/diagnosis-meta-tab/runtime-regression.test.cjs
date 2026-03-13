@@ -97,6 +97,15 @@ test("loader tolerates legacy card template drift and patches cards via DOM clea
   );
 });
 
+test("loader tolerates normalizeSiteData declaration drift", () => {
+  assert.match(runtime, /function patchLegacyNormalizeSiteData\(a\)\{/);
+  assert.match(runtime, /Legacy patch point not found: normalizeSiteData declaration/);
+  assert.match(runtime, /Legacy patch point not found: normalizeSiteData boundary/);
+  assert.match(runtime, /const normalizeSiteData = \(data\) => \{/);
+  assert.match(runtime, /const normalizeSiteData=data=>\{/);
+  assert.match(runtime, /s=patchLegacyNormalizeSiteData\(s\)/);
+});
+
 test("saved tmp html exposes merge-aware export hooks", () => {
   assert.match(runtime, /window\.__SEARCHADVISOR_EXPORT_PAYLOAD__ = EXPORT_PAYLOAD;/);
   assert.match(runtime, /const SITE_META_MAP = EXPORT_PAYLOAD\.siteMeta \|\| \{\};/);
