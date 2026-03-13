@@ -100,9 +100,12 @@ test("loader tolerates legacy card template drift and patches cards via DOM clea
 test("loader tolerates normalizeSiteData declaration drift", () => {
   assert.match(runtime, /function patchLegacyNormalizeSiteData\(a\)\{/);
   assert.match(runtime, /Legacy patch point not found: normalizeSiteData declaration/);
-  assert.match(runtime, /Legacy patch point not found: normalizeSiteData boundary/);
+  assert.match(runtime, /Legacy patch point not found: normalizeSiteData start/);
+  assert.match(runtime, /Legacy patch point not found: normalizeSiteData end/);
   assert.match(runtime, /const normalizeSiteData = \(data\) => \{/);
   assert.match(runtime, /const normalizeSiteData=data=>\{/);
+  assert.match(runtime, /const p=a\.indexOf\("\{",f\);/);
+  assert.match(runtime, /for\(let v=p;v<a\.length;v\+\+\)if\(a\[v\]==="\{"\)b\+\+;else if\(a\[v\]==="\}"&&\(b--,b===0\)\)\{S=v\+1;break\}/);
   assert.match(runtime, /s=patchLegacyNormalizeSiteData\(s\)/);
 });
 
