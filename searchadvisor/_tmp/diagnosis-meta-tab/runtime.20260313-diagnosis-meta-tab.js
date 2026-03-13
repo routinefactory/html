@@ -2664,7 +2664,7 @@ function barchart(vals, labels, H, col, unit) {
   setAllSitesLabel();
   renderAllSites();
 })();
-`,lS="sadv_data_v2_",R0=720*60*1e3;function aS(a){return lS+btoa(a).replace(/=/g,"")}function A0(a){try{const s=localStorage.getItem(aS(a));if(!s)return null;const f=JSON.parse(s);return typeof f?.ts=="number"?{ts:f.ts}:null}catch{return null}}function rS(a){const s=Date.now();if(a.curMode==="site"&&a.curSite){const v=A0(a.curSite);return v?{label:a.curSite.replace(/^https?:\/\//,""),updatedAt:v.ts,remainingMs:Math.max(0,v.ts+R0-s),sourceCount:1,measuredAt:s}:null}const f=a.allSites.map(v=>({site:v,record:A0(v)})).filter(v=>!!v.record);return f.length?{label:`전체 ${f.length}개`,updatedAt:Math.max(...f.map(v=>v.record.ts)),remainingMs:Math.max(0,Math.min(...f.map(v=>v.record.ts+R0))-s),sourceCount:f.length,measuredAt:s}:null}function _0(a){return{...a,runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"dev",runtimeLoadedAt:window.__SEARCHADVISOR_RUNTIME_LOADED_AT__||null,cacheMeta:rS(a)}}/* Runtime surgery rule: keep Ho() patch anchors ASCII-only and encode Korean UI text with \\uXXXX escapes. */function Ho(a,s,f){if(a.includes(s))return a.replace(s,f);const v=[s.replace(/\r/g,""),s.replace(/\r/g,"\n"),s.replace(/\n/g,"\r\n"),s.replace(/\n/g,"\\n")];for(const h of v)if(h&&a.includes(h))return a.replace(h,f);if(s.startsWith('      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"'))return a;throw new Error(`Legacy patch point not found: ${s.slice(0,48)}`)}function patchLegacyNormalizeSiteData(a){const s=['  function normalizeSiteData(data) {',"  const normalizeSiteData = function (data) {","  const normalizeSiteData = function(data) {","  const normalizeSiteData = (data) => {","  const normalizeSiteData=(data)=>{","  const normalizeSiteData = data => {","  const normalizeSiteData=data=>{"];let f=-1;for(const v of s)if((f=a.indexOf(v))>=0)break;if(f<0)throw new Error("Legacy patch point not found: normalizeSiteData declaration");const p=a.indexOf("{",f);if(p<0)throw new Error("Legacy patch point not found: normalizeSiteData start");let S=-1,b=0;for(let v=p;v<a.length;v++)if(a[v]==="{")b++;else if(a[v]==="}"&&(b--,b===0)){S=v+1;break}if(S<0)throw new Error("Legacy patch point not found: normalizeSiteData end");for(;S<a.length&&(a[S]===";"||a[S]==="\r"||a[S]==="\n"||a[S]===" "||a[S]==="\t");)S++;const E=`  function normalizeSiteData(data) {
+`,lS="sadv_data_v2_",R0=720*60*1e3;function aS(a){return lS+btoa(a).replace(/=/g,"")}function A0(a){try{const s=localStorage.getItem(aS(a));if(!s)return null;const f=JSON.parse(s);return typeof f?.ts=="number"?{ts:f.ts}:null}catch{return null}}function rS(a){const s=Date.now();if(a.curMode==="site"&&a.curSite){const v=A0(a.curSite);return v?{label:a.curSite.replace(/^https?:\/\//,""),updatedAt:v.ts,remainingMs:Math.max(0,v.ts+R0-s),sourceCount:1,measuredAt:s}:null}const f=a.allSites.map(v=>({site:v,record:A0(v)})).filter(v=>!!v.record);return f.length?{label:`전체 ${f.length}개`,updatedAt:Math.max(...f.map(v=>v.record.ts)),remainingMs:Math.max(0,Math.min(...f.map(v=>v.record.ts+R0))-s),sourceCount:f.length,measuredAt:s}:null}function _0(a){return{...a,runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"dev",runtimeLoadedAt:window.__SEARCHADVISOR_RUNTIME_LOADED_AT__||null,cacheMeta:rS(a)}}/* Runtime surgery rule: keep Ho() patch anchors ASCII-only and encode Korean UI text with \\uXXXX escapes. */function Ho(a,s,f){if(a.includes(s))return a.replace(s,f);const v=[s.replace(/\r/g,""),s.replace(/\r/g,"\n"),s.replace(/\n/g,"\r\n"),s.replace(/\n/g,"\\n")];for(const h of v)if(h&&a.includes(h))return a.replace(h,f);if(s.startsWith('      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"'))return a;throw new Error(`Legacy patch point not found: ${s.slice(0,48)}`)}function jS(a,s,f){let v=-1;for(const p of s)if((v=a.indexOf(p))>=0)break;if(v<0)throw new Error(`Legacy patch point not found: ${f} declaration`);return v}function qS(a,s,f,v){const p=a.indexOf(s,f);if(p<0)throw new Error(`Legacy patch point not found: ${v} start`);let S=-1,b=0;for(let E=p;E<a.length;E++)if(a[E]===s)b++;else if(a[E]===f&&(b--,b===0)){S=E+1;break}if(S<0)throw new Error(`Legacy patch point not found: ${v} end`);return S}function $S(a,s){for(;s<a.length&&(a[s]===";"||a[s]==="\r"||a[s]==="\n"||a[s]===" "||a[s]==="\t");)s++;return s}function eA(a,s,f,v,p,S){const b=jS(a,s,S),E=qS(a,v,b,S),T=$S(a,E);return a.slice(0,b)+f+a.slice(T)}function patchLegacyNormalizeSiteData(a){const s=`  function normalizeSiteData(data) {
     if (!data) return null;
     const expose = data.expose || null,
       detailLoaded =
@@ -2684,7 +2684,93 @@ function barchart(vals, labels, H, col, unit) {
     if ("diagnosisMetaFetchedAt" in data) normalized.diagnosisMetaFetchedAt = data.diagnosisMetaFetchedAt ?? null;
     return normalized;
   }
-`;return a.slice(0,f)+E+a.slice(S)}function iS(a){let s=a.replace(/^javascript:\s*/,"").replace(/\n/g,"\n");return s=Ho(s,`  let curMode = "all",
+`;return eA(a,['  function normalizeSiteData(data) {',"  const normalizeSiteData = function (data) {","  const normalizeSiteData = function(data) {","  const normalizeSiteData = (data) => {","  const normalizeSiteData=(data)=>{","  const normalizeSiteData = data => {","  const normalizeSiteData=data=>{"],s,"{","}","normalizeSiteData")}function patchLegacyFetchSiteData(a){const s=`  async function fetchSiteData(site) {
+    const exposedData = await fetchExposeData(site);
+    const baseData = hasDiagnosisMetaSnapshot(exposedData)
+      ? exposedData
+      : await fetchDiagnosisMeta(site, exposedData);
+    if (baseData.detailLoaded) return baseData;
+    if (inflightDetail[site]) return inflightDetail[site];
+    const enc = encodeURIComponent(site),
+      base = "https://searchadvisor.naver.com/api-console/report";
+    const detailEndDate = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const detailStartDate = new Date(Date.now() - 90 * 864e5)
+      .toISOString()
+      .slice(0, 10)
+      .replace(/-/g, "");
+    inflightDetail[site] = (async function () {
+      try {
+        const [cR, bR] = await Promise.allSettled([
+          fetch(
+            base +
+              "/crawl/" +
+              encId +
+              "?site=" +
+              enc +
+              "&start_date=" +
+              detailStartDate +
+              "&end_date=" +
+              detailEndDate +
+              "&isAlly=false&count=5",
+            { credentials: "include", headers: { accept: "application/json" } },
+          ),
+          fetch(
+            base +
+              "/backlink/" +
+              encId +
+              "?site=" +
+              enc +
+              "&start_date=" +
+              detailStartDate +
+              "&end_date=" +
+              detailEndDate,
+            { credentials: "include", headers: { accept: "application/json" } },
+          ),
+        ]);
+        const crawl =
+          cR.status === "fulfilled" && cR.value.ok ? await cR.value.json() : null;
+        const backlink =
+          bR.status === "fulfilled" && bR.value.ok ? await bR.value.json() : null;
+        const result = {
+          ...baseData,
+          crawl,
+          backlink,
+          detailLoaded: true,
+        };
+        if ("diagnosisMeta" in baseData) {
+          result.diagnosisMeta = baseData.diagnosisMeta ?? null;
+        }
+        if ("diagnosisMetaStatus" in baseData) {
+          result.diagnosisMetaStatus = baseData.diagnosisMetaStatus ?? null;
+        }
+        if ("diagnosisMetaRange" in baseData) {
+          result.diagnosisMetaRange = baseData.diagnosisMetaRange ?? null;
+        }
+        if ("diagnosisMetaFetchState" in baseData) {
+          result.diagnosisMetaFetchState = baseData.diagnosisMetaFetchState ?? null;
+        }
+        if ("diagnosisMetaFetchedAt" in baseData) {
+          result.diagnosisMetaFetchedAt = baseData.diagnosisMetaFetchedAt ?? null;
+        }
+        memCache[site] = result;
+        setCachedData(site, result);
+        return result;
+      } finally {
+        delete inflightDetail[site];
+      }
+    })();
+    return inflightDetail[site];
+  }
+`;return eA(a,["  async function fetchSiteData(site) {","  async function fetchSiteData (site) {","  const fetchSiteData = async function (site) {","  const fetchSiteData = async function(site) {","  const fetchSiteData = async (site) => {","  const fetchSiteData=async(site)=>{"],s,"{","}","fetchSiteData")}function patchLegacyTabs(a){const s=`  const TABS = [
+    { id: "overview", label: "\uAC1C\uC694" },
+    { id: "daily", label: "\uC77C\uBCC4" },
+    { id: "urls", label: "URL" },
+    { id: "queries", label: "\uAC80\uC0C9\uC5B4" },
+    { id: "crawl", label: "\uD06C\uB864" },
+    { id: "backlink", label: "\uBC31\uB9C1\uD06C" },
+    { id: "diagnosis", label: "\uBA54\uD0C0" },
+  ];
+`;return eA(a,["  const TABS = [","  let TABS = [","  var TABS = ["],s,"[","]","TABS")}function iS(a){let s=a.replace(/^javascript:\s*/,"").replace(/\n/g,"\n");return s=Ho(s,`  let curMode = "all",
     curSite = null,
     curTab = "overview";
   let siteViewReqId = 0;`,`  let curMode = "all",
@@ -2824,155 +2910,7 @@ function barchart(vals, labels, H, col, unit) {
     window.__sadvR = R;
     renderTab(R);
     __sadvNotify();
-  }`),s=Ho(s,`    if (requestId !== siteViewReqId || site !== curSite) return;`,`    if (requestId !== siteViewReqId || site !== curSite || curMode !== "site") return;`),s=Ho(s,`          res.status === "fulfilled"
-            ? normalizeSiteData(res.value)
-            : { expose: null, crawl: null, backlink: null, detailLoaded: false };`,`          res.status === "fulfilled"
-            ? normalizeSiteData(res.value)
-            : { expose: null, crawl: null, backlink: null, detailLoaded: false };`),s=patchLegacyNormalizeSiteData(s),s=Ho(s,`  async function fetchSiteData(site) {
-    const baseData = await fetchExposeData(site);
-    if (baseData.detailLoaded) return baseData;
-    if (inflightDetail[site]) return inflightDetail[site];
-    const enc = encodeURIComponent(site),
-      base = "https://searchadvisor.naver.com/api-console/report";
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const d90 = new Date(Date.now() - 90 * 864e5)
-      .toISOString()
-      .slice(0, 10)
-      .replace(/-/g, "");
-    inflightDetail[site] = (async function () {
-      try {
-        const [cR, bR] = await Promise.allSettled([
-          fetch(
-            base +
-              "/crawl/" +
-              encId +
-              "?site=" +
-              enc +
-              "&start_date=" +
-              d90 +
-              "&end_date=" +
-              today +
-              "&isAlly=false&count=5",
-            { credentials: "include", headers: { accept: "application/json" } },
-          ),
-          fetch(
-            base +
-              "/backlink/" +
-              encId +
-              "?site=" +
-              enc +
-              "&start_date=" +
-              d90 +
-              "&end_date=" +
-              today,
-            { credentials: "include", headers: { accept: "application/json" } },
-          ),
-        ]);
-        const crawl =
-          cR.status === "fulfilled" && cR.value.ok ? await cR.value.json() : null;
-        const backlink =
-          bR.status === "fulfilled" && bR.value.ok ? await bR.value.json() : null;
-        const result = { ...baseData, crawl, backlink, detailLoaded: true };
-        memCache[site] = result;
-        setCachedData(site, result);
-        return result;
-      } finally {
-        delete inflightDetail[site];
-      }
-    })();
-    return inflightDetail[site];
-  }`,`  async function fetchSiteData(site) {
-    const exposedData = await fetchExposeData(site);
-    const baseData = hasDiagnosisMetaSnapshot(exposedData)
-      ? exposedData
-      : await fetchDiagnosisMeta(site, exposedData);
-    if (baseData.detailLoaded) return baseData;
-    if (inflightDetail[site]) return inflightDetail[site];
-    const enc = encodeURIComponent(site),
-      base = "https://searchadvisor.naver.com/api-console/report";
-    const detailEndDate = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const detailStartDate = new Date(Date.now() - 90 * 864e5)
-      .toISOString()
-      .slice(0, 10)
-      .replace(/-/g, "");
-    inflightDetail[site] = (async function () {
-      try {
-        const [cR, bR] = await Promise.allSettled([
-          fetch(
-            base +
-              "/crawl/" +
-              encId +
-              "?site=" +
-              enc +
-              "&start_date=" +
-              detailStartDate +
-              "&end_date=" +
-              detailEndDate +
-              "&isAlly=false&count=5",
-            { credentials: "include", headers: { accept: "application/json" } },
-          ),
-          fetch(
-            base +
-              "/backlink/" +
-              encId +
-              "?site=" +
-              enc +
-              "&start_date=" +
-              detailStartDate +
-              "&end_date=" +
-              detailEndDate,
-            { credentials: "include", headers: { accept: "application/json" } },
-          ),
-        ]);
-        const crawl =
-          cR.status === "fulfilled" && cR.value.ok ? await cR.value.json() : null;
-        const backlink =
-          bR.status === "fulfilled" && bR.value.ok ? await bR.value.json() : null;
-        const result = {
-          ...baseData,
-          crawl,
-          backlink,
-          detailLoaded: true,
-        };
-        if ("diagnosisMeta" in baseData) {
-          result.diagnosisMeta = baseData.diagnosisMeta ?? null;
-        }
-        if ("diagnosisMetaStatus" in baseData) {
-          result.diagnosisMetaStatus = baseData.diagnosisMetaStatus ?? null;
-        }
-        if ("diagnosisMetaRange" in baseData) {
-          result.diagnosisMetaRange = baseData.diagnosisMetaRange ?? null;
-        }
-        if ("diagnosisMetaFetchState" in baseData) {
-          result.diagnosisMetaFetchState = baseData.diagnosisMetaFetchState ?? null;
-        }
-        if ("diagnosisMetaFetchedAt" in baseData) {
-          result.diagnosisMetaFetchedAt = baseData.diagnosisMetaFetchedAt ?? null;
-        }
-        memCache[site] = result;
-        setCachedData(site, result);
-        return result;
-      } finally {
-        delete inflightDetail[site];
-      }
-    })();
-    return inflightDetail[site];
-  }`),s=Ho(s,`  const TABS = [
-    { id: "overview", label: "📊 개요" },
-    { id: "daily", label: "📅 일별" },
-    { id: "urls", label: "🔗 URL" },
-    { id: "queries", label: "🔍 검색어" },
-    { id: "crawl", label: "🕷️ 크롤" },
-    { id: "backlink", label: "🔗 백링크" },
-  ];`,`  const TABS = [
-    { id: "overview", label: "📊 개요" },
-    { id: "daily", label: "📅 일별" },
-    { id: "urls", label: "🔗 URL" },
-    { id: "queries", label: "🔍 검색어" },
-    { id: "crawl", label: "🕷️ 크롤" },
-    { id: "backlink", label: "🔗 백링크" },
-    { id: "diagnosis", label: "🧪 메타" },
-  ];`),s=Ho(s,`  function buildRenderers(expose, crawlData, backlinkData) {
+  }`),s=Ho(s,`    if (requestId !== siteViewReqId || site !== curSite) return;`,`    if (requestId !== siteViewReqId || site !== curSite || curMode !== "site") return;`),s=patchLegacyNormalizeSiteData(s),s=patchLegacyFetchSiteData(s),s=patchLegacyTabs(s),s=Ho(s,`  function buildRenderers(expose, crawlData, backlinkData) {
     const item = (expose && expose.items && expose.items[0]) || {};
     const period = item.period || {},
       rawLogs = item.logs || [],

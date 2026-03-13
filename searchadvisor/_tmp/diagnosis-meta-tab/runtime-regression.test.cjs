@@ -98,14 +98,16 @@ test("loader tolerates legacy card template drift and patches cards via DOM clea
 });
 
 test("loader tolerates normalizeSiteData declaration drift", () => {
+  assert.match(runtime, /function jS\(a,s,f\)\{/);
+  assert.match(runtime, /function qS\(a,s,f,v\)\{/);
+  assert.match(runtime, /function \$S\(a,s\)\{/);
+  assert.match(runtime, /function eA\(a,s,f,v,p,S\)\{/);
   assert.match(runtime, /function patchLegacyNormalizeSiteData\(a\)\{/);
-  assert.match(runtime, /Legacy patch point not found: normalizeSiteData declaration/);
-  assert.match(runtime, /Legacy patch point not found: normalizeSiteData start/);
-  assert.match(runtime, /Legacy patch point not found: normalizeSiteData end/);
   assert.match(runtime, /const normalizeSiteData = \(data\) => \{/);
   assert.match(runtime, /const normalizeSiteData=data=>\{/);
-  assert.match(runtime, /const p=a\.indexOf\("\{",f\);/);
-  assert.match(runtime, /for\(let v=p;v<a\.length;v\+\+\)if\(a\[v\]==="\{"\)b\+\+;else if\(a\[v\]==="\}"&&\(b--,b===0\)\)\{S=v\+1;break\}/);
+  assert.match(runtime, /throw new Error\(`Legacy patch point not found: \$\{f\} declaration`\)/);
+  assert.match(runtime, /throw new Error\(`Legacy patch point not found: \$\{v\} start`\)/);
+  assert.match(runtime, /throw new Error\(`Legacy patch point not found: \$\{v\} end`\)/);
   assert.match(runtime, /s=patchLegacyNormalizeSiteData\(s\)/);
 });
 
@@ -113,6 +115,26 @@ test("runtime does not keep identity result patch anchors", () => {
   assert.doesNotMatch(
     runtime,
     /s=Ho\(s,`        const result = \{\s+expose,\s+crawl: null,\s+backlink: null,\s+detailLoaded: false,\s+\};`,`        const result = \{\s+expose,\s+crawl: null,\s+backlink: null,\s+detailLoaded: false,\s+\};`\)/,
+  );
+  assert.doesNotMatch(
+    runtime,
+    /s=Ho\(s,`          res\.status === "fulfilled"[\s\S]*?normalizeSiteData\(res\.value\)[\s\S]*?detailLoaded: false \};`,`          res\.status === "fulfilled"[\s\S]*?normalizeSiteData\(res\.value\)[\s\S]*?detailLoaded: false \};`\)/,
+  );
+});
+
+test("loader patches fetchSiteData and TABS via structural helpers", () => {
+  assert.match(runtime, /function patchLegacyFetchSiteData\(a\)\{/);
+  assert.match(runtime, /function patchLegacyTabs\(a\)\{/);
+  assert.match(runtime, /eA\(a,\["  async function fetchSiteData\(site\) \{"/);
+  assert.match(runtime, /eA\(a,\["  const TABS = \[","  let TABS = \[","  var TABS = \["\],s,"\[","\]","TABS"\)/);
+  assert.match(runtime, /s=patchLegacyFetchSiteData\(s\),s=patchLegacyTabs\(s\),s=Ho\(s,`  function buildRenderers/);
+  assert.doesNotMatch(
+    runtime,
+    /s=Ho\(s,`  async function fetchSiteData\(site\) \{/,
+  );
+  assert.doesNotMatch(
+    runtime,
+    /s=Ho\(s,`  const TABS = \[/,
   );
 });
 
