@@ -434,6 +434,13 @@ test("saved tmp html bootstrap initializes both site and all-sites request guard
   assert.match(runtime, /let allViewReqId = 0;/);
 });
 
+test("saved tmp html embeds its own ui state cache helpers", () => {
+  assert.match(runtime, /const SNAPSHOT_UI_STATE_KEY =/);
+  assert.match(runtime, /function getUiStateCacheKey\(\) \{/);
+  assert.match(runtime, /function getCachedUiState\(\) \{/);
+  assert.match(runtime, /function setCachedUiState\(\) \{/);
+});
+
 test("live runtime routes manual refresh through a shared full-refresh pipeline", () => {
   assert.match(runtime, /async function runFullRefreshPipeline\(options = \{\}\) \{/);
   assert.match(

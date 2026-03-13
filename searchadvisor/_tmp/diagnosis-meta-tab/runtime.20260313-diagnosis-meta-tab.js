@@ -1443,6 +1443,48 @@ function barchart(vals, labels, H, col, unit) {
     let curMode = "all";
     let curSite = EXPORT_PAYLOAD.curSite || (allSites[0] || null);
     let curTab = EXPORT_PAYLOAD.curTab || "overview";
+    const SNAPSHOT_UI_STATE_KEY =
+      "sadv_snapshot_ui_v1::" +
+      String(EXPORT_PAYLOAD.savedAt || "") +
+      "::" +
+      String(EXPORT_PAYLOAD.curSite || "");
+    function lsGet(k) {
+      try {
+        const v = localStorage.getItem(k);
+        return v ? JSON.parse(v) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    function lsSet(k, v) {
+      try {
+        localStorage.setItem(k, JSON.stringify(v));
+      } catch (e) {}
+    }
+    function getUiStateCacheKey() {
+      return SNAPSHOT_UI_STATE_KEY;
+    }
+    function getCachedUiState() {
+      const cached = lsGet(getUiStateCacheKey());
+      if (!cached || typeof cached !== "object") return null;
+      const mode = cached.mode === "site" ? "site" : cached.mode === "all" ? "all" : null;
+      const tab = typeof cached.tab === "string" ? cached.tab : null;
+      const site = typeof cached.site === "string" ? cached.site : null;
+      if (!mode && !tab && !site) return null;
+      return {
+        mode,
+        tab,
+        site,
+      };
+    }
+    function setCachedUiState() {
+      lsSet(getUiStateCacheKey(), {
+        ts: Date.now(),
+        mode: curMode,
+        tab: curTab,
+        site: curSite,
+      });
+    }
     const SITE_COLORS_MAP = {};
     const memCache = {};
     let siteViewReqId = 0;

@@ -1,0 +1,11 @@
+window.__SEARCHADVISOR_RUNTIME_VERSION__
+
+fetch('https://raw.githubusercontent.com/routinefactory/html/main/searchadvisor/_tmp/diagnosis-meta-tab/latest.json?ts='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(console.log)
+
+fetch('https://raw.githubusercontent.com/routinefactory/html/main/searchadvisor/_tmp/diagnosis-meta-tab/runtime.20260313-diagnosis-meta-tab.js?ts='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>console.log({hasAllCardColors:t.includes('const allCardColors = [C.green, C.blue, C.amber, C.teal, C.purple];'),hasIndexMini:t.includes('const indexMini = sparkline('),hasDiagnosisDates:t.includes('diagnosisIndexedDates')}))
+
+console.log({hasApi:!!window.__sadvApi,isReady:window.__sadvApi?.isReady?.(),hasPanel:!!document.getElementById('sadv-p'),hasReactHost:!!document.getElementById('sadv-react-shell-host')})
+
+(()=>{const host=document.getElementById('sadv-react-shell-host');const sr=host?.shadowRoot;const txt=sr?.textContent||'';console.log({host:!!host,shadow:!!sr,hasSnapshotShell:txt.includes('전체현황'),hasWeeklyTrend:txt.includes('주간추세'),hasIndexLabel:txt.includes('색인 추이'),textSample:txt.slice(0,200)})})()
+
+document.getElementById('sadv-p')?.remove(); document.getElementById('sadv-react-shell-host')?.remove(); delete window.__sadvApi;
