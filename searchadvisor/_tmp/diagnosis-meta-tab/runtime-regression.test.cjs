@@ -407,33 +407,33 @@ test("saved tmp html direct save forces refresh and merges snapshot meta fallbac
     /const M=\{\.\.\.T,siteMeta:T\.siteMeta\|\|E\.siteMeta\|\|\{\},mergedMeta:T\.mergedMeta\|\|E\.mergedMeta\|\|null\};/,
   );
   assert.match(runtime, /const O=a\.buildLegacySnapshotHtml\(S,M\);/);
-  assert.match(transformedRuntime, /function buildSnapshotShellState\(payload\) \{/);
-  assert.match(transformedRuntime, /function injectSnapshotReactShell\(html, payload\) \{/);
+  assert.match(runtime, /function q0\(a\)\{/);
+  assert.match(runtime, /function kS\(a,s\)\{/);
   assert.match(
-    transformedRuntime,
+    runtime,
     /const reactShellCss = vS\(document\.getElementById\("sadv-react-style"\)\?\.textContent \|\| ""\);/,
   );
   assert.match(
-    transformedRuntime,
-    /const reactShellMarkup = fS\.renderToStaticMarkup\(Y\.jsx\(wS,\{state:buildSnapshotShellState\(payload\),rows:payload\.summaryRows\|\|\[\]\}\)\);/,
+    runtime,
+    /const f=vS\(document\.getElementById\("sadv-react-style"\)\?\.textContent\|\|""\),v=q0\(s\),p=fS\.renderToStaticMarkup\(Y\.jsx\(wS,\{state:q0\(s\),rows:s\.summaryRows\|\|\[\]\}\)\);/,
   );
   assert.match(
-    transformedRuntime,
-    /html = html\.replace\('<div id="sadv-bd">', `<div id="sadv-react-shell-root">\$\{reactShellMarkup\}<\/div><div id="sadv-bd">`\);/,
+    runtime,
+    /buildLegacySnapshotHtml:\(s,f\)=>kS\(a\.buildLegacySnapshotHtml\(s,f\),f\)/,
   );
   assert.match(
-    transformedRuntime,
-    /html = html\.replace\("<\/body>", `<script>\$\{gS\(SS\(\)\)\}<\/script><\/body>`\);/,
+    runtime,
+    /a=a\.replace\("<\/body>",`<script>\$\{gS\(SS\(\)\)\}<\\\/script><\/body>`\)/,
   );
 });
 
 test("saved tmp html injects canonical snapshot shell assets ahead of the offline body", () => {
-  assert.match(transformedRuntime, /const reactShellCss = vS\(document\.getElementById\("sadv-react-style"\)\?\.textContent \|\| ""\);/);
-  assert.match(transformedRuntime, /const shellState = buildSnapshotShellState\(payload\);/);
-  assert.match(transformedRuntime, /const reactShellMarkup = fS\.renderToStaticMarkup\(Y\.jsx\(wS,\{state:buildSnapshotShellState\(payload\),rows:payload\.summaryRows\|\|\[\]\}\)\);/);
-  assert.match(transformedRuntime, /<style id="sadv-react-style">\$\{reactShellCss\}<\/style>/);
-  assert.match(transformedRuntime, /#sadv-header,#sadv-mode-bar,#sadv-site-bar,#sadv-tabs\{display:none !important\}/);
-  assert.match(transformedRuntime, /<div id="sadv-react-shell-root">\$\{reactShellMarkup\}<\/div><div id="sadv-bd">/);
+  assert.match(runtime, /function kS\(a,s\)\{/);
+  assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=\$\{JSON\.stringify\(v\)\}/);
+  assert.match(runtime, /<style id="sadv-react-style">\$\{f\}<\/style>/);
+  assert.match(runtime, /#sadv-header,#sadv-mode-bar,#sadv-site-bar,#sadv-tabs\{display:none !important\}/);
+  assert.match(runtime, /<div id="sadv-react-shell-root">\$\{p\}<\/div><div id="sadv-bd">/);
+  assert.match(transformedRuntime, /return html;/);
 });
 
 test("both visible and direct HTML save paths now use refresh semantics", () => {

@@ -1621,7 +1621,7 @@ function barchart(vals, labels, H, col, unit) {
   <\/script>
 </body>
 </html>\`;
-    return injectSnapshotReactShell(html, payload);
+    return html;
   }
   async function downloadSnapshot() {
     const btn = document.getElementById("sadv-save-btn");
@@ -3930,7 +3930,7 @@ function barchart(vals, labels, H, col, unit) {
 })();`),s=Ho(s,`    let allSites = EXPORT_PAYLOAD.allSites || [];
 `,`    function __sadvNotify() {}
     let allSites = EXPORT_PAYLOAD.allSites || [];
-`),s}let Qh=null;function oS(){Qh||(Qh=iS(nS)),new Function(Qh)();const a=window.__sadvApi;return a?{getState:()=>_0(a.getState()),isReady:()=>!!a.isReady?.(),waitUntilReady:s=>a.waitUntilReady?a.waitUntilReady(s):Promise.resolve(!0),subscribe:s=>a.subscribe(f=>{s(_0(f))}),switchMode:a.switchMode,setSite:a.setSite,setTab:a.setTab,refresh:a.refresh,download:a.download,exportSnapshotData:a.exportSnapshotData,buildLegacySnapshotHtml:a.buildLegacySnapshotHtml,close:a.close}:null}var eu={},Ps={};/**
+`),s}function q0(a){const s=Array.isArray(a.allSites)?a.allSites.slice():[],f=s.map(function(v){const p=a.dataBySite&&a.dataBySite[v];return p&&typeof p.__cacheSavedAt=="number"?p.__cacheSavedAt:null}).filter(function(v){return typeof v=="number"}),v=a.savedAt&&!Number.isNaN(new Date(a.savedAt).getTime())?new Date(a.savedAt):null,p=f.length?new Date(Math.max.apply(null,f)):v;return{accountLabel:a.accountLabel||"",allSites:s,curMode:a.curMode==="site"?"site":"all",curSite:typeof a.curSite=="string"?a.curSite:s[0]||null,curTab:dS.some(function(S){return S.id===a.curTab})?a.curTab:"overview",runtimeVersion:window.__SEARCHADVISOR_RUNTIME_VERSION__||"snapshot",cacheMeta:p?{label:"snapshot",updatedAt:p,remainingMs:null,sourceCount:s.length,measuredAt:Date.now()}:null}}function kS(a,s){if(!a.includes('<div id="sadv-bd">'))throw new Error("snapshot panel not found");const f=vS(document.getElementById("sadv-react-style")?.textContent||""),v=q0(s),p=fS.renderToStaticMarkup(Y.jsx(wS,{state:q0(s),rows:s.summaryRows||[]}));return a=a.replace("</head>",`<style id="sadv-react-style">${f}</style><style id="sadv-snapshot-shell-hide">#sadv-header,#sadv-mode-bar,#sadv-site-bar,#sadv-tabs{display:none !important}#sadv-react-shell-root{display:block;width:100%;flex-shrink:0}</style></head>`),a=a.replace("<body>",`<body><script>window.__SEARCHADVISOR_SNAPSHOT_SHELL_STATE__=${JSON.stringify(v)};<\/script>`),a=a.replace('<div id="sadv-bd">',`<div id="sadv-react-shell-root">${p}</div><div id="sadv-bd">`),a=a.replace("</body>",`<script>${gS(SS())}<\/script></body>`),a}let Qh=null;function oS(){Qh||(Qh=iS(nS)),new Function(Qh)();const a=window.__sadvApi;return a?{getState:()=>_0(a.getState()),isReady:()=>!!a.isReady?.(),waitUntilReady:s=>a.waitUntilReady?a.waitUntilReady(s):Promise.resolve(!0),subscribe:s=>a.subscribe(f=>{s(_0(f))}),switchMode:a.switchMode,setSite:a.setSite,setTab:a.setTab,refresh:a.refresh,download:a.download,exportSnapshotData:a.exportSnapshotData,buildLegacySnapshotHtml:(s,f)=>kS(a.buildLegacySnapshotHtml(s,f),f),close:a.close}:null}var eu={},Ps={};/**
  * @license React
  * react-dom-server-legacy.browser.production.js
  *
