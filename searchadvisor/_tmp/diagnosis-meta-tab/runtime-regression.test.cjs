@@ -187,6 +187,12 @@ test("export path supports cache-first and force-refresh detail collection", () 
   assert.match(runtime, /function hasSuccessfulFieldSnapshot\(data, key\) \{/);
   assert.match(runtime, /function hasRecentFieldFailure\(data, key, cooldownMs = FIELD_FAILURE_RETRY_MS\) \{/);
   assert.match(runtime, /function shouldFetchField\(data, key, options\) \{/);
+  assert.match(runtime, /function hasSuccessfulDiagnosisMetaSnapshot\(data\) \{/);
+  assert.match(
+    runtime,
+    /function hasRecentDiagnosisMetaFailure\(\s*data,\s*cooldownMs = FIELD_FAILURE_RETRY_MS,\s*\) \{/,
+  );
+  assert.match(runtime, /function shouldFetchDiagnosisMeta\(data, options\) \{/);
   assert.match(runtime, /function hasDetailSnapshot\(data\) \{/);
   assert.match(
     runtime,
@@ -217,6 +223,18 @@ test("site detail fetch tracks endpoint-level success and retries only incomplet
     runtime,
     /next\.detailLoaded =\s+next\.crawlFetchState === "success" && next\.backlinkFetchState === "success";/,
   );
+});
+
+test("diagnosis meta follows the same cache-aware retry policy during export", () => {
+  assert.match(
+    runtime,
+    /function hasDiagnosisMetaSnapshot\(data\) \{\s+return hasSuccessfulDiagnosisMetaSnapshot\(data\) \|\| hasRecentDiagnosisMetaFailure\(data\);\s+\}/,
+  );
+  assert.match(runtime, /if \(options && options\.force\) return true;/);
+  assert.match(runtime, /if \(hasSuccessfulDiagnosisMetaSnapshot\(data\)\) return false;/);
+  assert.match(runtime, /if \(options && options\.retryIncomplete\) return true;/);
+  assert.match(runtime, /return !hasRecentDiagnosisMetaFailure\(data\);/);
+  assert.match(runtime, /if \(!shouldFetchDiagnosisMeta\(baseData, options\)\) return baseData;/);
 });
 
 test("site picker does not reload the same site twice in a row", () => {

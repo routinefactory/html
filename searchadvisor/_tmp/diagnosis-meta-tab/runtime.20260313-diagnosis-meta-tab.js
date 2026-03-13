@@ -1454,18 +1454,32 @@ function barchart(vals, labels, H, col, unit) {
   const inflightExpose = {};
   const inflightDetail = {};
   const inflightDiagnosisMeta = {};
-  function hasDiagnosisMetaSnapshot(data) {
-    if (!data) return false;
-    if (data.diagnosisMeta && data.diagnosisMeta.code === 0 && data.diagnosisMetaRange) {
-      return true;
-    }
-    if (typeof data.diagnosisMetaFetchState !== "string") return false;
-    if (data.diagnosisMetaFetchState === "success") return true;
-    if (data.diagnosisMetaFetchState !== "failure") return false;
+  function hasSuccessfulDiagnosisMetaSnapshot(data) {
     return !!(
-      typeof data.diagnosisMetaFetchedAt === "number" &&
-      Date.now() - data.diagnosisMetaFetchedAt < 15 * 60 * 1000
+      data &&
+      ((data.diagnosisMeta && data.diagnosisMeta.code === 0 && data.diagnosisMetaRange) ||
+        data.diagnosisMetaFetchState === "success")
     );
+  }
+  function hasRecentDiagnosisMetaFailure(
+    data,
+    cooldownMs = FIELD_FAILURE_RETRY_MS,
+  ) {
+    return !!(
+      data &&
+      data.diagnosisMetaFetchState === "failure" &&
+      typeof data.diagnosisMetaFetchedAt === "number" &&
+      Date.now() - data.diagnosisMetaFetchedAt < cooldownMs
+    );
+  }
+  function hasDiagnosisMetaSnapshot(data) {
+    return hasSuccessfulDiagnosisMetaSnapshot(data) || hasRecentDiagnosisMetaFailure(data);
+  }
+  function shouldFetchDiagnosisMeta(data, options) {
+    if (options && options.force) return true;
+    if (hasSuccessfulDiagnosisMetaSnapshot(data)) return false;
+    if (options && options.retryIncomplete) return true;
+    return !hasRecentDiagnosisMetaFailure(data);
   }
   function getDiagnosisMetaRange() {
     const formatYmd = function (date) {
@@ -1494,7 +1508,7 @@ function barchart(vals, labels, H, col, unit) {
   }
   async function fetchDiagnosisMeta(site, seedData, options) {
     const baseData = seedData || (await fetchExposeData(site, options));
-    if (!(options && options.force) && hasDiagnosisMetaSnapshot(baseData)) return baseData;
+    if (!shouldFetchDiagnosisMeta(baseData, options)) return baseData;
     if (!(options && options.force) && inflightDiagnosisMeta[site]) return inflightDiagnosisMeta[site];
     const enc = encodeURIComponent(site),
       base = "https://searchadvisor.naver.com/api-console/report";
