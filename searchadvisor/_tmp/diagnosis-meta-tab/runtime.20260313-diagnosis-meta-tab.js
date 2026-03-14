@@ -894,13 +894,10 @@ function barchart(vals, labels, H, col, unit) {
     const now = Date.now();
     const siteListTs = getSiteListCacheStamp();
     if (!(typeof siteListTs === "number") || now - siteListTs >= DATA_TTL) return true;
-    // Avoid forcing a full refresh on every reopen when only some sites are missing cache.
-    // Trigger bootstrap refresh only when there is no fresh site cache at all.
-    const freshSiteCount = allSites.reduce(function (count, site) {
+    return allSites.some(function (site) {
       const siteTs = getSiteDataCacheStamp(site);
-      return typeof siteTs === "number" && now - siteTs < DATA_TTL ? count + 1 : count;
-    }, 0);
-    return freshSiteCount === 0;
+      return !(typeof siteTs === "number") || now - siteTs >= DATA_TTL;
+    });
   }
   async function runFullRefreshPipeline(options = {}) {
     const trigger = options && options.trigger ? options.trigger : "manual";
@@ -1166,29 +1163,40 @@ function barchart(vals, labels, H, col, unit) {
       "  const snapshotApi = window.__SEARCHADVISOR_SNAPSHOT_API__ || null;",
       "  if (!host || !snapshotApi) return;",
       '  host.setAttribute("style", "display:block !important;width:100% !important;flex-shrink:0;");',
+      '  let portal = host.querySelector("#sadv-react-portal-root");',
+      "  if (!portal) {",
+      '    portal = document.createElement("div");',
+      '    portal.id = "sadv-react-portal-root";',
+      "    host.appendChild(portal);",
+      "  }",
+      '  let mount = host.querySelector("#sadv-react-shell-root");',
+      "  if (!mount) {",
+      '    mount = document.createElement("div");',
+      '    mount.id = "sadv-react-shell-root";',
+      "  }",
+      '  mount.setAttribute("data-sadvx", "snapshot-shell");',
       '  const shellIds = ["sadv-header", "sadv-mode-bar", "sadv-site-bar", "sadv-tabs"];',
+      "  const moved = [];",
+      "  shellIds.forEach(function (id) {",
+      "    const node = document.getElementById(id);",
+      "    if (!node || !node.parentNode) return;",
+      "    moved.push({ node: node, parent: node.parentNode, next: node.nextSibling });",
+      "    mount.appendChild(node);",
+      "  });",
       "  const previousUnmount = window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;",
       '  if (typeof previousUnmount === "function") {',
       "    try { previousUnmount(); } catch (_) {}",
       "  }",
       '  const hideStyle = document.getElementById("sadv-snapshot-shell-hide");',
       "  if (hideStyle) hideStyle.remove();",
-      '  const mount = document.createElement("div");',
-      '  mount.id = "sadv-react-shell-root";',
       "  host.replaceChildren(mount);",
-      "  const moved = [];",
-      "  shellIds.forEach(function (id) {",
-      "    const node = document.getElementById(id);",
-      "    if (!node) return;",
-      "    moved.push({ parent: node.parentNode, next: node.nextSibling, node: node });",
-      "    mount.appendChild(node);",
-      "  });",
+      "  host.appendChild(portal);",
       "  window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__ = function () {",
       "    moved.forEach(function (entry) {",
-      "      if (!entry.parent || !entry.node) return;",
-      "      entry.parent.insertBefore(entry.node, entry.next);",
+      "      if (entry.parent) entry.parent.insertBefore(entry.node, entry.next);",
       "    });",
       "    host.replaceChildren();",
+      "    host.appendChild(portal);",
       "    delete window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;",
       "  };",
       "})();",
@@ -1970,27 +1978,8 @@ function barchart(vals, labels, H, col, unit) {
       localStorage.removeItem(getSiteDataCacheKey(site));
     } catch (e) {}
   }
-  function isHexEncId(value) {
-    return typeof value === "string" && /^[a-f0-9]{64}$/i.test(value);
-  }
   const accountLabel = getAccountLabel();
   applyAccountBadge(accountLabel);
-  const ENC_ID_LS_PREFIX = "sadv_enc_id_v1_";
-  function getEncIdCacheKey() {
-    return ENC_ID_LS_PREFIX + accountIdFromLabel(accountLabel);
-  }
-  function getCachedEncId() {
-    const cached = lsGet(getEncIdCacheKey());
-    const value = cached && typeof cached === "object" ? cached.encId : null;
-    return isHexEncId(value) ? String(value).toLowerCase() : null;
-  }
-  function setCachedEncId(value) {
-    if (!isHexEncId(value)) return;
-    lsSet(getEncIdCacheKey(), {
-      encId: String(value).toLowerCase(),
-      ts: Date.now(),
-    });
-  }
   let encId = null;
   try {
     encId =
@@ -2016,35 +2005,16 @@ function barchart(vals, labels, H, col, unit) {
       }
     } catch (e) {}
   }
-  if (!encId) encId = getCachedEncId();
   if (!encId) {
     try {
-      const resourceEntries = performance
-        .getEntriesByType("resource")
-        .map(function (entry) {
-          return entry && typeof entry.name === "string" ? entry.name : "";
-        })
-        .filter(function (name) {
-          return (
-            !!name &&
-            name.indexOf("searchadvisor.naver.com/api-console/") >= 0
-          );
-        })
-        .sort();
-      for (const resourceUrl of resourceEntries) {
-        const m = resourceUrl.match(/([a-f0-9]{64})/i);
-        if (m && isHexEncId(m[1])) {
+      for (const e of performance.getEntriesByType("resource")) {
+        const m = e.name.match(new RegExp("([a-f0-9]{64})"));
+        if (m) {
           encId = m[1];
           break;
         }
       }
     } catch (e) {}
-  }
-  if (isHexEncId(encId)) {
-    encId = String(encId).toLowerCase();
-    setCachedEncId(encId);
-  } else {
-    encId = null;
   }
   if (!encId) {
     const host = (location && location.hostname) || "",
@@ -4279,29 +4249,40 @@ function LS(){
     "  const snapshotApi = window.__SEARCHADVISOR_SNAPSHOT_API__ || null;",
     "  if (!host || !snapshotApi) return;",
     '  host.setAttribute("style", "display:block !important;width:100% !important;flex-shrink:0;");',
+    '  let portal = host.querySelector("#sadv-react-portal-root");',
+    "  if (!portal) {",
+    '    portal = document.createElement("div");',
+    '    portal.id = "sadv-react-portal-root";',
+    "    host.appendChild(portal);",
+    "  }",
+    '  let mount = host.querySelector("#sadv-react-shell-root");',
+    "  if (!mount) {",
+    '    mount = document.createElement("div");',
+    '    mount.id = "sadv-react-shell-root";',
+    "  }",
+    '  mount.setAttribute("data-sadvx", "snapshot-shell");',
     '  const shellIds = ["sadv-header", "sadv-mode-bar", "sadv-site-bar", "sadv-tabs"];',
+    "  const moved = [];",
+    "  shellIds.forEach(function (id) {",
+    "    const node = document.getElementById(id);",
+    "    if (!node || !node.parentNode) return;",
+    "    moved.push({ node: node, parent: node.parentNode, next: node.nextSibling });",
+    "    mount.appendChild(node);",
+    "  });",
     "  const previousUnmount = window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;",
     '  if (typeof previousUnmount === "function") {',
     "    try { previousUnmount(); } catch (_) {}",
     "  }",
     '  const hideStyle = document.getElementById("sadv-snapshot-shell-hide");',
     "  if (hideStyle) hideStyle.remove();",
-    '  const mount = document.createElement("div");',
-    '  mount.id = "sadv-react-shell-root";',
     "  host.replaceChildren(mount);",
-    "  const moved = [];",
-    "  shellIds.forEach(function (id) {",
-    "    const node = document.getElementById(id);",
-    "    if (!node) return;",
-    "    moved.push({ parent: node.parentNode, next: node.nextSibling, node: node });",
-    "    mount.appendChild(node);",
-    "  });",
+    "  host.appendChild(portal);",
     "  window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__ = function () {",
     "    moved.forEach(function (entry) {",
-    "      if (!entry.parent || !entry.node) return;",
-    "      entry.parent.insertBefore(entry.node, entry.next);",
+    "      if (entry.parent) entry.parent.insertBefore(entry.node, entry.next);",
     "    });",
     "    host.replaceChildren();",
+    "    host.appendChild(portal);",
     "    delete window.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;",
     "  };",
     "})();",
