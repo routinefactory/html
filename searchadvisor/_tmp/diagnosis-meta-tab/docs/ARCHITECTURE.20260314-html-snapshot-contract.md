@@ -2,7 +2,7 @@
 
 Date: `2026-03-14`
 
-Status: adopted architecture for snapshot state/control handoff; new exports use direct snapshot API plus light-DOM shell, while body renderer convergence remains incremental
+Status: adopted architecture for snapshot state/control handoff; new exports and current live shell mount use the same direct snapshot API plus light-DOM shell ownership model, while body renderer convergence remains incremental
 
 ## Purpose
 
@@ -108,8 +108,9 @@ As of `2026-03-14`, the working evidence in this lab is:
 - a version-correct saved HTML can still look visually different from the live panel
 - a saved HTML can contain valid payload contract markers and still show menu/header drift
 - that drift is produced by the dedicated saved-html shell path, not by missing external UI libraries
-- newly exported snapshots should mount the canonical shell through a direct snapshot API in light DOM
-- compat bridge code may still exist, but it is fallback for older snapshot variants rather than the primary reopen path
+- newly exported snapshots mount the canonical shell through a direct snapshot API in light DOM
+- the current live shell mount should use the same light-DOM ownership model so live and saved chrome do not diverge just because of host topology
+- compat bridge code may still exist only as fallback for older snapshot variants rather than the primary reopen path
 
 This matters because it changes the diagnosis rule:
 

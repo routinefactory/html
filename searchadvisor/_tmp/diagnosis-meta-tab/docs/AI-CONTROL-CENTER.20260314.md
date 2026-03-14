@@ -65,6 +65,7 @@ Compatibility note:
 - when reopening older snapshot markup, a compat bridge may synthesize the snapshot API from legacy DOM/state
 - the shell should still consume only the normalized snapshot API, not legacy DOM directly
 - for newly exported snapshots, the preferred path is direct snapshot API plus one light-DOM shell mount
+- current lab target is stricter: new exports and current live shell mount should both use the same light-DOM shell ownership model
 - generated save/export wrappers inside transformed runtime code must be self-contained and must not reference outer helper names unless those names are explicitly exported through a stable global contract
 
 Authoritative detail:

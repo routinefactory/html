@@ -1,4 +1,4 @@
-const test = require("node:test");
+﻿const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -445,6 +445,8 @@ test("saved tmp html mounts the live react shell from a direct snapshot api in a
   assert.match(transformedRuntime, /const previousUnmount = window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;/);
   assert.match(transformedRuntime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__ = root;/);
   assert.match(transformedRuntime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__ = function \(\) \{/);
+  assert.doesNotMatch(runtime, /attachShadow\(/);
+  assert.doesNotMatch(runtime, /sadv-react-style-shadow/);
 });
 
 test("saved-html export wrapper stays self-contained at the wrapper boundary", () => {
@@ -473,6 +475,14 @@ test("saved-html export wrapper stays self-contained at the wrapper boundary", (
         'a=a.replace(\n    "</body>",\n    `<script>${gS(LS())}<\\/script></body>`',
       ),
   );
+});
+
+test("live runtime shell mount also uses the same light-dom host contract", () => {
+  assert.match(runtime, /function RS\(\)\{const a=document\.getElementById\("sadv-p"\),s=document\.getElementById\("sadv-bd"\);if\(!a\|\|!s\)return null;/);
+  assert.match(runtime, /let p=document\.getElementById\("sadv-react-shell-host"\);/);
+  assert.match(runtime, /let S=p\.querySelector\("#sadv-react-portal-root"\);/);
+  assert.match(runtime, /let E=p\.querySelector\("#sadv-react-shell-root"\);/);
+  assert.doesNotMatch(runtime, /shadowRoot\?\?v\.attachShadow/);
 });
 
 test("both visible and direct HTML save paths now use refresh semantics", () => {
