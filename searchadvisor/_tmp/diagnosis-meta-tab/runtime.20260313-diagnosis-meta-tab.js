@@ -894,10 +894,13 @@ function barchart(vals, labels, H, col, unit) {
     const now = Date.now();
     const siteListTs = getSiteListCacheStamp();
     if (!(typeof siteListTs === "number") || now - siteListTs >= DATA_TTL) return true;
-    return allSites.some(function (site) {
+    // Avoid forcing a full refresh on every reopen when only some sites are missing cache.
+    // Trigger bootstrap refresh only when there is no fresh site cache at all.
+    const freshSiteCount = allSites.reduce(function (count, site) {
       const siteTs = getSiteDataCacheStamp(site);
-      return !(typeof siteTs === "number") || now - siteTs >= DATA_TTL;
-    });
+      return typeof siteTs === "number" && now - siteTs < DATA_TTL ? count + 1 : count;
+    }, 0);
+    return freshSiteCount === 0;
   }
   async function runFullRefreshPipeline(options = {}) {
     const trigger = options && options.trigger ? options.trigger : "manual";
