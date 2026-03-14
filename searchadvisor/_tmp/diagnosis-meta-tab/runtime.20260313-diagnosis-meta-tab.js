@@ -1276,7 +1276,7 @@ function barchart(vals, labels, H, col, unit) {
       "  const root = Sy.createRoot(mount);",
       '  root.render(Y.jsx(H.StrictMode, { children: Y.jsx(tS, { api: api, portalContainer: portal }) }));',
       "})();",
-    ].join("\\n");
+    ].join(String.fromCharCode(10));
   }
   function buildSnapshotApiCompatScript() {
     return [
@@ -4473,7 +4473,7 @@ function LS(){
     "  const root = Sy.createRoot(mount);",
     '  root.render(Y.jsx(H.StrictMode, { children: Y.jsx(tS, { api: api, portalContainer: portal }) }));',
     "})();",
-  ].join("\\n")
+  ].join(String.fromCharCode(10))
 }
 function kS(a,s){
   if(!a.includes('<div id="sadv-bd">'))throw new Error("snapshot panel not found");
