@@ -8,6 +8,8 @@ Current note:
 
 - read `searchadvisor/_tmp/diagnosis-meta-tab/docs/AI-CONTROL-CENTER.20260314.md` first before using this file as implementation guidance
 - if this file conflicts with the newer architecture docs, prefer the control center and architecture docs
+- if a newly exported saved HTML is version-correct but still looks visually different from the live panel, treat that as saved-shell architectural drift first
+- do not diagnose that situation as missing `lucide`, `shadcn`, or some other third-party UI asset unless there is direct evidence
 
 This document is an active working reference for the temporary diagnosis-meta work area.
 
@@ -101,6 +103,12 @@ This means the architecture should aim for the following:
 - design drift should be survivable
 - payload drift must be controlled explicitly
 
+Additional design-stage clarification from `2026-03-14`:
+
+- a saved HTML file can carry the correct runtime version and the correct payload markers and still visually diverge from the live panel
+- when that happens, the root cause should be treated as saved-html-shell divergence, not external asset failure
+- the correct long-term fix is snapshot control-shell/state convergence, not more permanent save-shell-only styling patches
+
 ### Non-negotiable takeaway
 
 The system is not just:
@@ -135,10 +143,10 @@ Current path split:
   - `searchadvisor/_tmp/diagnosis-meta-tab/runtime.20260313-diagnosis-meta-tab.js`
   - `searchadvisor/_tmp/diagnosis-meta-tab/bookmarklet.txt`
 
-Current pointers at the time of writing:
+Current pointers now:
 
 - Production: `20260312-48`
-- Tmp diagnosis tab: `20260313-diagnosis-meta-tab-r59`
+- Tmp diagnosis tab: `20260314-diagnosis-meta-tab-r80`
 
 Important principle:
 
@@ -321,15 +329,15 @@ Why it matters:
 
 ### Current head
 
-- `r59`
-- commit: `2aa8764`
-- message: `fix: restore tmp diagnosis all-sites meta cards`
+- `r67`
+- commit: `6537271`
+- message: `fix: restore saved snapshot ui state helpers`
 
 Why it matters:
 
-- this patch fixed a real regression where the visible body still used the old overall-card renderer
-- however, `r59` should not be treated as the ideal design baseline
-- it is a repaired state, not a clean conceptual reset point
+- this patch fixed a real saved-HTML interaction regression where snapshot-local UI state helpers were missing
+- however, `r67` should not be treated as the final saved-HTML architecture baseline
+- it is a safer transitional state, not the end of canonical renderer convergence
 
 ## 5. What Actually Went Wrong
 
@@ -540,9 +548,13 @@ If the system is allowed to recollect all sites, it must expose detailed progres
 At minimum the UI should show:
 
 - trigger reason
-- current phase
-- current site
+- current activity or phase
+- current site when a site-specific step is active
 - completed site count / total site count
+- the latest status detail line
+
+Recommended when available:
+
 - success count
 - partial failure count
 - hard failure count
