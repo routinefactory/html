@@ -201,7 +201,10 @@ Error generating stack: `+l.message+`
   const DATA_TTL = 12 * 60 * 60 * 1000;
   const ALL_SITES_BATCH = 4;
   const FULL_REFRESH_BATCH_SIZE = 1;
-  const FULL_REFRESH_SITE_DELAY_MS = 180;
+  const FULL_REFRESH_SITE_DELAY_MS = 350;
+  const FULL_REFRESH_JITTER_MS = 150;
+  const BACKOFF_BASE_DELAY_MS = 2000;
+  const BACKOFF_MAX_DELAY_MS = 30000;
   let TIP = null;
   function tip() {
     if (!TIP) {
@@ -832,6 +835,7 @@ function barchart(vals, labels, H, col, unit) {
     await ensureExportSiteList(refreshMode);
     const total = allSites.length;
     let done = 0;
+    const stats = { success: 0, partial: 0, failed: 0, errors: [] };
     for (let i = 0; i < allSites.length; i += batchSize) {
       const batch = allSites.slice(i, i + batchSize);
       const results = await Promise.allSettled(
@@ -841,18 +845,41 @@ function barchart(vals, labels, H, col, unit) {
       );
       results.forEach(function (res, idx) {
         const site = batch[idx];
-        const siteData =
-          res.status === "fulfilled"
-            ? normalizeSiteData(res.value)
-            : { expose: null, crawl: null, backlink: null, detailLoaded: false };
+        let siteData;
+        if (res.status === "fulfilled") {
+          siteData = normalizeSiteData(res.value);
+          const hasExpose = siteData && siteData.expose != null;
+          const hasDetail = siteData && siteData.detailLoaded === true;
+          if (hasExpose && hasDetail) {
+            stats.success++;
+          } else if (hasExpose) {
+            stats.partial++;
+          } else {
+            stats.failed++;
+            if (res.reason && res.reason.message) {
+              stats.errors.push({ site, error: res.reason.message.slice(0, 100) });
+            } else {
+              stats.errors.push({ site, error: "expose data missing" });
+            }
+          }
+        } else {
+          siteData = { expose: null, crawl: null, backlink: null, detailLoaded: false };
+          stats.failed++;
+          if (res.reason && res.reason.message) {
+            stats.errors.push({ site, error: res.reason.message.slice(0, 100) });
+          } else {
+            stats.errors.push({ site, error: "request rejected" });
+          }
+        }
         dataBySite[site] = siteData;
         summaryRows.push(buildSiteSummaryRow(site, siteData));
         done++;
-        if (onProgress) onProgress(done, total, site);
+        if (onProgress) onProgress(done, total, site, stats);
       });
       if (refreshMode === "refresh" && i + batchSize < allSites.length) {
+        const jitter = Math.floor(Math.random() * FULL_REFRESH_JITTER_MS);
         await new Promise(function (resolve) {
-          setTimeout(resolve, FULL_REFRESH_SITE_DELAY_MS);
+          setTimeout(resolve, FULL_REFRESH_SITE_DELAY_MS + jitter);
         });
       }
     }
@@ -867,13 +894,32 @@ function barchart(vals, labels, H, col, unit) {
       dataBySite,
       siteMeta: typeof getSiteMetaMap === "function" ? getSiteMetaMap() : {},
       mergedMeta: typeof getMergedMetaState === "function" ? getMergedMetaState() : null,
+      stats,
     };
   }
-  function renderFullRefreshProgress(label, detail, progress) {
+  function renderFullRefreshProgress(label, detail, progress, stats) {
     const ratio =
       typeof progress === "number" && isFinite(progress)
         ? Math.max(0.06, Math.min(1, progress))
         : 0.06;
+    const st = stats || { success: 0, partial: 0, failed: 0, errors: [] };
+    const pct = Math.round(ratio * 100);
+    let statsHtml = "";
+    if (st.success > 0 || st.partial > 0 || st.failed > 0) {
+      statsHtml =
+        '<div style="display:flex;gap:12px;margin-top:8px;font-size:10px">' +
+        '<span style="color:#4ade80">' + st.success + ' success</span>' +
+        '<span style="color:#fbbf24">' + st.partial + ' partial</span>' +
+        '<span style="color:#f87171">' + st.failed + ' failed</span>' +
+        "</div>";
+    }
+    let errorsHtml = "";
+    if (st.errors && st.errors.length > 0 && st.errors.length <= 3) {
+      errorsHtml =
+        '<div style="margin-top:10px;font-size:10px;color:#f87171;line-height:1.4">' +
+        st.errors.map(function (e) { return escHtml(e.site) + ": " + escHtml(e.error); }).join("<br>") +
+        "</div>";
+    }
     bdEl.innerHTML =
       '<div style="padding:24px 18px 20px;color:#7a9ab8;text-align:left;line-height:1.6">' +
       '<div style="font-size:13px;font-weight:700;color:#d4ecff;margin-bottom:8px">' +
@@ -882,11 +928,18 @@ function barchart(vals, labels, H, col, unit) {
       '<div style="font-size:11px;margin-bottom:10px">' +
       (detail || "") +
       "</div>" +
-      '<div style="height:10px;border-radius:999px;background:#0d1829;border:1px solid #1a2d45;overflow:hidden">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+      '<div style="flex:1;height:10px;border-radius:999px;background:#0d1829;border:1px solid #1a2d45;overflow:hidden">' +
       '<div style="width:' +
-      Math.round(ratio * 100) +
+      pct +
       '%;height:100%;background:linear-gradient(90deg,#40c4ff,#00e676)"></div>' +
       "</div>" +
+      '<span style="font-size:11px;font-weight:700;color:#d4ecff;min-width:48px;text-align:right">' +
+      pct +
+      "%</span>" +
+      "</div>" +
+      statsHtml +
+      errorsHtml +
       "</div>";
   }
   function shouldBootstrapFullRefresh() {
@@ -913,7 +966,7 @@ function barchart(vals, labels, H, col, unit) {
     labelEl.innerHTML = "<span>전체 재수집 진행 중</span>";
     const btn = options && options.button ? options.button : null;
     const payload = await collectExportData(
-      function (done, total, site) {
+      function (done, total, site, stats) {
         const safeTotal = Math.max(1, total);
         const shortSite = site
           ? site.replace("https://", "").replace("http://", "")
@@ -924,7 +977,7 @@ function barchart(vals, labels, H, col, unit) {
           safeTotal +
           " 사이트 처리 중" +
           (shortSite ? " · " + shortSite : "");
-        renderFullRefreshProgress(triggerLabel, detail, done / safeTotal);
+        renderFullRefreshProgress(triggerLabel, detail, done / safeTotal, stats);
         if (btn) btn.textContent = done + "/" + safeTotal;
       },
       { refreshMode: "refresh" },
@@ -941,7 +994,59 @@ function barchart(vals, labels, H, col, unit) {
       await renderAllSites();
     }
     setCachedUiState();
+    if (payload.stats && (payload.stats.failed > 0 || payload.stats.errors.length > 0)) {
+      renderFailureSummary(payload.stats);
+    }
     return payload;
+  }
+  function renderFailureSummary(stats) {
+    if (!stats || (stats.failed === 0 && stats.errors.length === 0)) return;
+    const summaryEl = document.createElement("div");
+    summaryEl.id = "sadv-failure-summary";
+    summaryEl.style.cssText =
+      "position:fixed;bottom:12px;right:12px;background:#1a1a2e;border:1px solid #f87171;border-radius:8px;padding:12px 16px;font-size:11px;color:#f87171;max-width:320px;z-index:10000000;box-shadow:0 4px 20px rgba(0,0,0,.5);font-family:Apple SD Gothic Neo,system-ui";
+    const failedCount = stats.failed || 0;
+    const partialCount = stats.partial || 0;
+    const errorItems = (stats.errors || []).slice(0, 5);
+    const headerRow = document.createElement("div");
+    headerRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:4px";
+    const titleSpan = document.createElement("span");
+    titleSpan.style.fontWeight = "700";
+    titleSpan.textContent = "Data Collection Issues";
+    headerRow.appendChild(titleSpan);
+    const closeBtn = document.createElement("button");
+    closeBtn.textContent = "\u00d7";
+    closeBtn.style.cssText = "background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:0 4px";
+    closeBtn.onclick = function () { summaryEl.remove(); };
+    headerRow.appendChild(closeBtn);
+    summaryEl.appendChild(headerRow);
+    const countDiv = document.createElement("div");
+    countDiv.style.color = "#fcd34d";
+    countDiv.textContent = failedCount + " failed" + (partialCount > 0 ? ", " + partialCount + " partial" : "");
+    summaryEl.appendChild(countDiv);
+    if (errorItems.length > 0) {
+      const errorDiv = document.createElement("div");
+      errorDiv.style.cssText = "margin-top:8px;padding-top:8px;border-top:1px solid #f8717155;font-size:10px;line-height:1.5";
+      errorItems.forEach(function (e) {
+        const line = document.createElement("div");
+        const siteShort = e.site ? e.site.replace(/^https?:\/\//, "").slice(0, 30) : "unknown";
+        line.textContent = siteShort + ": " + (e.error || "unknown error");
+        errorDiv.appendChild(line);
+      });
+      if (stats.errors.length > 5) {
+        const moreLine = document.createElement("div");
+        moreLine.style.color = "#fbbf24";
+        moreLine.textContent = "... +" + (stats.errors.length - 5) + " more";
+        errorDiv.appendChild(moreLine);
+      }
+      summaryEl.appendChild(errorDiv);
+    }
+    const existing = document.getElementById("sadv-failure-summary");
+    if (existing) existing.remove();
+    document.body.appendChild(summaryEl);
+    setTimeout(function () {
+      if (summaryEl && summaryEl.parentElement) summaryEl.remove();
+    }, 30000);
   }
   function savedAtIso(d) {
     return (
