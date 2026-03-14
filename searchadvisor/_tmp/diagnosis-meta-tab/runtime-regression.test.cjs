@@ -1,4 +1,4 @@
-﻿const test = require("node:test");
+const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -419,7 +419,7 @@ test("saved tmp html direct save forces refresh and merges snapshot meta fallbac
   );
 });
 
-test("saved tmp html mounts the live react shell from a direct snapshot api in a single light-dom path", () => {
+test("saved tmp html reuses the saved legacy chrome through a self-contained shell host", () => {
   assert.match(runtime, /function kS\(a,s\)\{/);
   assert.match(runtime, /function injectSnapshotReactShell\(html, payload\) \{/);
   assert.match(runtime, /const reactShellCss = vS\(document\.getElementById\("sadv-react-style"\)\?\.textContent \|\| ""\);/);
@@ -429,24 +429,29 @@ test("saved tmp html mounts the live react shell from a direct snapshot api in a
   assert.match(runtime, /buildSnapshotShellBootstrapScript\(\)/);
   assert.match(runtime, /const snapshotApi = window\.__SEARCHADVISOR_SNAPSHOT_API__ \|\| null;/);
   assert.match(runtime, /if \(!host \|\| !snapshotApi\) return;/);
-  assert.match(runtime, /host\.querySelector\("#sadv-react-shell-root"\)/);
+  assert.match(runtime, /const shellIds = \["sadv-header", "sadv-mode-bar", "sadv-site-bar", "sadv-tabs"\];/);
   assert.match(runtime, /const previousUnmount = window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;/);
+  assert.match(runtime, /const hideStyle = document\.getElementById\("sadv-snapshot-shell-hide"\);/);
+  assert.match(runtime, /if \(hideStyle\) hideStyle\.remove\(\);/);
+  assert.match(runtime, /host\.replaceChildren\(mount\);/);
+  assert.match(runtime, /mount\.appendChild\(node\);/);
   assert.match(runtime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__ = function \(\) \{/);
+  assert.match(runtime, /entry\.parent\.insertBefore\(entry\.node, entry\.next\);/);
+  assert.match(runtime, /host\.replaceChildren\(\);/);
   assert.doesNotMatch(runtime, /injectSnapshotReactShell[\s\S]*buildSnapshotApiCompatScript\(\)/);
-  assert.match(
-    runtime,
-    /root\.render\(Y\.jsx\(H\.StrictMode, \{ children: Y\.jsx\(tS, \{ api: snapshotApi, portalContainer: portal \}\) \}\)\);/,
-  );
+  assert.doesNotMatch(runtime, /root\.render\(Y\.jsx\(H\.StrictMode/);
+  assert.doesNotMatch(runtime, /Sy\.createRoot\(mount\)/);
   assert.match(
     runtime,
     /querySelectorAll\(\s*'#sadv-react-shell-host,#sadv-react-shell-root,#sadv-react-portal-root,\[data-sadvx="snapshot-shell"\],\[data-sadvx-action="top"\]'/,
   );
   assert.match(transformedRuntime, /const snapshotApi = window\.__SEARCHADVISOR_SNAPSHOT_API__ \|\| null;/);
+  assert.match(transformedRuntime, /const shellIds = \["sadv-header", "sadv-mode-bar", "sadv-site-bar", "sadv-tabs"\];/);
   assert.match(transformedRuntime, /const previousUnmount = window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__;/);
-  assert.match(transformedRuntime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_ROOT__ = root;/);
+  assert.match(transformedRuntime, /const hideStyle = document\.getElementById\("sadv-snapshot-shell-hide"\);/);
+  assert.match(transformedRuntime, /mount\.appendChild\(node\);/);
   assert.match(transformedRuntime, /window\.__SEARCHADVISOR_SNAPSHOT_SHELL_UNMOUNT__ = function \(\) \{/);
-  assert.doesNotMatch(runtime, /attachShadow\(/);
-  assert.doesNotMatch(runtime, /sadv-react-style-shadow/);
+  assert.doesNotMatch(transformedRuntime, /Sy\.createRoot\(mount\)/);
 });
 
 test("saved-html export wrapper stays self-contained at the wrapper boundary", () => {
@@ -475,14 +480,6 @@ test("saved-html export wrapper stays self-contained at the wrapper boundary", (
         'a=a.replace(\n    "</body>",\n    `<script>${gS(LS())}<\\/script></body>`',
       ),
   );
-});
-
-test("live runtime shell mount also uses the same light-dom host contract", () => {
-  assert.match(runtime, /function RS\(\)\{const a=document\.getElementById\("sadv-p"\),s=document\.getElementById\("sadv-bd"\);if\(!a\|\|!s\)return null;/);
-  assert.match(runtime, /let p=document\.getElementById\("sadv-react-shell-host"\);/);
-  assert.match(runtime, /let S=p\.querySelector\("#sadv-react-portal-root"\);/);
-  assert.match(runtime, /let E=p\.querySelector\("#sadv-react-shell-root"\);/);
-  assert.doesNotMatch(runtime, /shadowRoot\?\?v\.attachShadow/);
 });
 
 test("both visible and direct HTML save paths now use refresh semantics", () => {
