@@ -1970,8 +1970,27 @@ function barchart(vals, labels, H, col, unit) {
       localStorage.removeItem(getSiteDataCacheKey(site));
     } catch (e) {}
   }
+  function isHexEncId(value) {
+    return typeof value === "string" && /^[a-f0-9]{64}$/i.test(value);
+  }
   const accountLabel = getAccountLabel();
   applyAccountBadge(accountLabel);
+  const ENC_ID_LS_PREFIX = "sadv_enc_id_v1_";
+  function getEncIdCacheKey() {
+    return ENC_ID_LS_PREFIX + accountIdFromLabel(accountLabel);
+  }
+  function getCachedEncId() {
+    const cached = lsGet(getEncIdCacheKey());
+    const value = cached && typeof cached === "object" ? cached.encId : null;
+    return isHexEncId(value) ? String(value).toLowerCase() : null;
+  }
+  function setCachedEncId(value) {
+    if (!isHexEncId(value)) return;
+    lsSet(getEncIdCacheKey(), {
+      encId: String(value).toLowerCase(),
+      ts: Date.now(),
+    });
+  }
   let encId = null;
   try {
     encId =
@@ -1997,16 +2016,35 @@ function barchart(vals, labels, H, col, unit) {
       }
     } catch (e) {}
   }
+  if (!encId) encId = getCachedEncId();
   if (!encId) {
     try {
-      for (const e of performance.getEntriesByType("resource")) {
-        const m = e.name.match(new RegExp("([a-f0-9]{64})"));
-        if (m) {
+      const resourceEntries = performance
+        .getEntriesByType("resource")
+        .map(function (entry) {
+          return entry && typeof entry.name === "string" ? entry.name : "";
+        })
+        .filter(function (name) {
+          return (
+            !!name &&
+            name.indexOf("searchadvisor.naver.com/api-console/") >= 0
+          );
+        })
+        .sort();
+      for (const resourceUrl of resourceEntries) {
+        const m = resourceUrl.match(/([a-f0-9]{64})/i);
+        if (m && isHexEncId(m[1])) {
           encId = m[1];
           break;
         }
       }
     } catch (e) {}
+  }
+  if (isHexEncId(encId)) {
+    encId = String(encId).toLowerCase();
+    setCachedEncId(encId);
+  } else {
+    encId = null;
   }
   if (!encId) {
     const host = (location && location.hostname) || "",
