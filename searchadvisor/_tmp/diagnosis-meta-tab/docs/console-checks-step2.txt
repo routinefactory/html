@@ -1,3 +1,0 @@
-console.log({hasApi:!!window.__sadvApi,isReady:window.__sadvApi?.isReady?.(),hasPanel:!!document.getElementById('sadv-p'),hasReactHost:!!document.getElementById('sadv-react-shell-host')})
-
-(()=>{const host=document.getElementById('sadv-react-shell-host');const sr=host?.shadowRoot;const txt=sr?.textContent||'';console.log({host:!!host,shadow:!!sr,hasSnapshotShell:txt.includes('전체현황'),hasWeeklyTrend:txt.includes('주간추세'),hasIndexLabel:txt.includes('색인 추이'),textSample:txt.slice(0,200)})})()

@@ -1,5 +1,0 @@
-(()=>{const bd=document.getElementById('sadv-bd');const txt=bd?.innerText||'';console.log({hasBd:!!bd,bdHasWeeklyTrend:txt.includes('주간추세'),bdHasIndexLabel:txt.includes('색인 추이'),bdSample:txt.slice(0,400)})})()
-
-;(()=>{const host=document.getElementById('sadv-react-shell-host');const sr=host?.shadowRoot;const mount=sr?.getElementById('sadv-react-shell-root');const portal=sr?.getElementById('sadv-react-portal-root');const txt=((mount?.innerText||'')+' '+(portal?.innerText||'')).trim();console.log({host:!!host,shadow:!!sr,hasMount:!!mount,hasPortal:!!portal,mountHasWeeklyTrend:txt.includes('주간추세'),mountHasIndexLabel:txt.includes('색인 추이'),mountSample:txt.slice(0,400)})})()
-
-;(()=>{const p=document.getElementById('sadv-p');const host=document.getElementById('sadv-react-shell-host');const pr=p?getComputedStyle(p):null;const hr=host?getComputedStyle(host):null;console.log({panelDisplay:pr?.display,panelVisibility:pr?.visibility,panelZ:pr?.zIndex,hostDisplay:hr?.display,hostVisibility:hr?.visibility,hostZ:hr?.zIndex,hostHtml:host?.outerHTML?.slice(0,300)})})()
